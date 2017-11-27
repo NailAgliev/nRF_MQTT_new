@@ -199,6 +199,7 @@ void modem_init()
 		case AT:  									 //Проверка доступен ли модуль
 			{
 				at_write("");
+				//printf("AT\n");
 				break;
 			}
 		case CFUN:
@@ -286,8 +287,8 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 				//SEGGER_RTT_printf(0, "%s", modem_data);
 				if(modem_data[0] == 'O'||'0')
 				{
-					modem_int_state = CFUN;
-					flush(modem_data);					
+					memset(modem_data, 0, sizeof(modem_data));
+					modem_int_state = CFUN;					
 					modem_init();
 					break;
 				}
@@ -301,8 +302,8 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 			{
 				if(modem_data[0] == 'O'||'0')
 				{
+					memset(modem_data, 0, sizeof(modem_data));
 					modem_int_state = CFUN_1;
-					memset(modem_data, 0, sizeof(modem_data));					
 					modem_init();
 					break;
 				}
@@ -316,8 +317,8 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 			{
 				if(modem_data[0] == 'O'||'0')
 				{
-					modem_int_state = ATE;
-					memset(modem_data, 0, sizeof(modem_data));					
+					memset(modem_data, 0, sizeof(modem_data));										
+					modem_int_state = ATE;			
 					modem_init();
 					break;
 				}
@@ -331,8 +332,8 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 			{
 				if(modem_data[0] == 'O'||'0')
 				{
+					memset(modem_data, 0, sizeof(modem_data));
 					modem_int_state = ATV;
-					memset(modem_data, 0, sizeof(modem_data));					
 					modem_init();
 					break;
 				}
@@ -346,8 +347,8 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 			{
 				if(modem_data[0] == '0')
 				{
+					memset(modem_data, 0, sizeof(modem_data));
 					modem_int_state = CMEE;
-					memset(modem_data, 0, sizeof(modem_data));					
 					modem_init();
 					break;
 				}
@@ -361,8 +362,8 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 			{
 				if(modem_data[0] == '0')
 				{
+					memset(modem_data, 0, sizeof(modem_data));
 					modem_int_state = CPIN_CHECK;
-					memset(modem_data, 0, sizeof(modem_data));					
 					modem_init();
 					break;
 				}
@@ -376,8 +377,8 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 			{
 				if(modem_data[0] == '0')
 				{
+					memset(modem_data, 0, sizeof(modem_data));
 					modem_int_state = CSQ_CHECK;
-					memset(modem_data, 0, sizeof(modem_data));					
 					modem_init();
 					break;
 				}
@@ -394,8 +395,8 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 					bool s = modem_s_q_check;
 					if(s == true)
 					{
+					memset(modem_data, 0, sizeof(modem_data));
 					modem_int_state = CREG_CHECK;
-					memset(modem_data, 0, sizeof(modem_data));					
 					modem_init();
 					break;
 					}
@@ -415,8 +416,8 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 			{
 				if(modem_data[0] == '0')
 				{
+					memset(modem_data, 0, sizeof(modem_data));
 					modem_int_state = CIPSHUT;
-					memset(modem_data, 0, sizeof(modem_data));					
 					modem_init();
 					break;
 				}
@@ -430,8 +431,8 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 			{
 				if(modem_data[0] == 'S')
 				{
+					memset(modem_data, 0, sizeof(modem_data));
 					modem_int_state = CGTT_CHECK;
-					memset(modem_data, 0, sizeof(modem_data));					
 					modem_init();
 					break;
 				}
