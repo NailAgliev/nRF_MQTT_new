@@ -138,7 +138,7 @@ bool modem_s_q_check()
 	{
 		comma++;
 	}
-	if(comma > 7)
+	if(comma > 8)
 	{
 		return true;
 	}
@@ -198,8 +198,8 @@ void modem_init()
 	{
 		case AT:  									 //Проверка доступен ли модуль
 			{
-				at_write("");
-				//printf("AT\n");
+				//at_write("");
+				printf("AT\n");
 				break;
 			}
 		case CFUN:
