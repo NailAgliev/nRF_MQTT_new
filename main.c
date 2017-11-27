@@ -300,7 +300,7 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 			}
 		case CFUN:
 			{
-				if(modem_data[0] == 'O'||'0')
+				if(modem_data[0] == 'O')
 				{
 					memset(modem_data, 0, sizeof(modem_data));
 					modem_int_state = CFUN_1;
@@ -315,7 +315,7 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 			}
 		case CFUN_1: 								 //Рестарт модуля
 			{
-				if(modem_data[0] == 'O'||'0')
+				if(modem_data[0] == 'O')
 				{
 					memset(modem_data, 0, sizeof(modem_data));										
 					modem_int_state = ATE;			
@@ -330,7 +330,7 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 			}
 		case ATE:										//No echo mode
 			{
-				if(modem_data[0] == 'O'||'0')
+				if(modem_data[0] == 'O')
 				{
 					memset(modem_data, 0, sizeof(modem_data));
 					modem_int_state = ATV;
@@ -522,7 +522,7 @@ int main(void)
 
     APP_ERROR_CHECK(err_code);
 
-    //printf("\r\nStart: \r\n");
+    printf("\r\nStart: \r\n");
 			
 			
 		//printf("Hello World \r\n");
