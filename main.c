@@ -135,13 +135,6 @@ static void scheduler_init(void)
     APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
 }
 
-void flush(uint8_t * p_buf)
-{
-	for(uint8_t i = 0; i < sizeof(p_buf); i++)
-	{
-		p_buf[i] = 0;
-	}
-}
 
 
 bool modem_s_q_check()
@@ -176,8 +169,6 @@ bool cgatt_check()
 	return false;
 		
 }
-
-
 
 void at_write(char second[])         //отправка комад модулю
 {
@@ -228,7 +219,8 @@ void modem_init()
 			{
 				//at_write("");
 				app_uart_flush();
-				printf("AT\r\n");
+				at_write("");
+				app_timer_start(uart_timer, APP_TIMER_TICKS(1000), NULL);
 				break;
 			}
 		case CFUN:
@@ -354,7 +346,8 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 				}
 				else
 				{
-					//memset(modem_data, 0, sizeof(modem_data));
+					memset(modem_data, 0, sizeof(modem_data));
+					app_timer_start(uart_timer, APP_TIMER_TICKS(1000), NULL);
 					break;
 				}
 			}
@@ -685,7 +678,12 @@ void uart_event_handle(app_uart_evt_t * p_event)
 	{
 		case APP_UART_DATA_READY:
 		{
-		rx_read();
+			if(modem_int_state == AT)
+			{
+				app_timer_stop_all();
+				app_sched_event_put(NULL, NULL, serial_scheduled_ex);				
+			}
+			rx_read();
 		}
 		default:
 			break;
