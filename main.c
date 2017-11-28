@@ -159,25 +159,16 @@ bool modem_reg_chck()
 }
 
 
-void at_write(char str[])         //отправка комад модулю
+void at_write(char second[])         //отправка комад модулю
 {
+		const char *first  = "AT";
+    const char *third	 = "\r\n";
 	
-	char at[2] = "AT";
-	char n[2] = "\n";
-	char * data_tx = strcat(at, str);
-	data_tx = strcat(data_tx, n);
+    printf("%s%s%s", first, second, third);
 	
-	SEGGER_RTT_printf(0, "%s", data_tx);
-	
-	for(uint8_t i = 0; i < sizeof(data_tx); i++)
-	{
-	app_uart_put(data_tx[i]);
-	}
-	memset(data_tx, 0, sizeof(data_tx));
+		SEGGER_RTT_printf(0, "%s%s%s", first, second, third);
+		
 }
-
-
-//void timer_event_handler(rf_timer_event_t event_type, void* p_context)
 
 
 
@@ -196,57 +187,56 @@ void modem_init()
 			}
 		case CFUN:
 			{
-				//at_write("+CFUN=0");
 				app_uart_flush();
-				printf("AT+CFUN=0\r\n");
+				at_write("+CFUN=0");
 				break;
 			}
 		case CFUN_1: 								 //Рестарт модуля
 			{
 				app_uart_flush();
-				printf("AT+CFUN=1,1\r\n");
+				at_write("+CFUN=1,1");
 				break;
 			}
 		case ATE:										//No echo mode
 			{
 				app_uart_flush();
-				printf("ATE0\r\n");
+				at_write("E0");
 				break;
 			}
 		case ATV:										//Числовой формат ответов
 			{
 				app_uart_flush();
-				printf("ATV0\r\n");
+				at_write("V0");
 				break;
 			}
 		case CMEE:  							 	//Кодовый формат ошибок
 			{
 				app_uart_flush();
-				printf("AT+CMEE=1\r\n");
+				at_write("+CMEE=1");
 				break;
 			}
 		case CPIN_CHECK:						
 			{
 				app_uart_flush();
-				printf("AT+CPIN=?\r\n");
+				at_write("+CPIN=?");
 				break;
 			}
 		case CSQ_CHECK: 						//Проверка силы сигнала
 			{
 				app_uart_flush();
-				printf("AT+CSQ\r\n");
+				at_write("+CSQ");
 				break;
 			}
 		case CREG_CHECK:						//Проверка рекгестрации в сети
 			{
 				app_uart_flush();
-				printf("AT+CREG?\r\n");
+				at_write("+CREG?");
 				break;
 			}
 		case CIPSHUT:								//TCP restart
 			{
 				app_uart_flush();
-				printf("AT+CIPSHUT\r\n");
+				at_write("+CIPSHUT");
 			}
 		case CGTT_CHECK:            //проверка готовности модуля для установления связи
 			{
@@ -584,7 +574,7 @@ int main(void)
     APP_ERROR_CHECK(err_code);
 
     //printf("\r\nStart: \r\n");
-			
+		SEGGER_RTT_printf(0, "init\r\n");
 			
 		//printf("Hello World \r\n");
 			
