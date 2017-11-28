@@ -138,35 +138,20 @@ bool modem_s_q_check()
 	{
 		comma++;
 	}
-	if(comma > 8)
+	if(comma > 7)
 	{
 		return true;
 	}
 	return false;
 }
 
-
-
-void rx_read()
+bool modem_reg_chck()
 {
-//	uint32_t err_code;
-//	uint8_t buf[128];
-//	uint8_t i = 0;
-//	while(err_code == NRF_SUCCESS)
-//	{
-//		app_uart_get(buf+i);
-//		i++;
-//	}
-//	
-	
-	app_uart_get(modem_data+index);
-	index++;
-	if(modem_data[index-1] == 0x0A)
+	if(modem_data[9] == '1')
 	{
-		index = 0;
-		SEGGER_RTT_printf(0, "%s", modem_data);
+		return true;
 	}
-	
+	return false;
 }
 
 
@@ -199,53 +184,53 @@ void modem_init()
 		case AT:  									 //Проверка доступен ли модуль
 			{
 				//at_write("");
-				printf("AT\n");
+				printf("AT\r\n");
 				break;
 			}
 		case CFUN:
 			{
 				//at_write("+CFUN=0");
-				printf("AT+CFUN=0\n");
+				printf("AT+CFUN=0\r\n");
 				break;
 			}
 		case CFUN_1: 								 //Рестарт модуля
 			{
-				printf("AT+CFUN=1,1\n");
+				printf("AT+CFUN=1,1\r\n");
 				break;
 			}
 		case ATE:										//No echo mode
 			{
-					printf("ATE0\n");
+					printf("ATE0\r\n");
 				break;
 			}
 		case ATV:										//Числовой формат ответов
 			{
-				printf("ATV0\n");
+				printf("ATV0\r\n");
 				break;
 			}
 		case CMEE:  							 	//Кодовый формат ошибок
 			{
-				printf("AT+CMEE=1\n");
+				printf("AT+CMEE=1\r\n");
 				break;
 			}
 		case CPIN_CHECK:						
 			{
-				printf("AT+PIN?\n");
+				printf("AT+CPIN=?\r\n");
 				break;
 			}
 		case CSQ_CHECK: 						//Проверка силы сигнала
 			{
-				printf("AT+CSQ\n");
+				printf("AT+CSQ\r\n");
 				break;
 			}
 		case CREG_CHECK:						//Проверка рекгестрации в сети
 			{
-				printf("AT+CREG?\n");
+				printf("AT+CREG?\r\n");
 				break;
 			}
 		case CIPSHUT:								//TCP restart
 			{
-				printf("AT+CIPSHUT\n");
+				printf("AT+CIPSHUT\r\n");
 			}
 		case CGTT_CHECK:            //проверка готовности модуля для установления связи
 			{
@@ -285,7 +270,7 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 				//nrf_mtx_unlock(&p_event_data->p_ctx->read_lock);
 				//nrf_serial_read(p_event_data, &modem_data, sizeof(modem_data), &size, 0);
 				//SEGGER_RTT_printf(0, "%s", modem_data);
-				if(modem_data[0] == 'O'||'0')
+				if(modem_data[0] == ('O')|| modem_data[0] == ('0')|| modem_data[0] == ('A'))
 				{
 					memset(modem_data, 0, sizeof(modem_data));
 					modem_int_state = CFUN;					
@@ -300,7 +285,7 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 			}
 		case CFUN:
 			{
-				if(modem_data[0] == 'O')
+				if(modem_data[0] == ('O')|| modem_data[0] == ('0'))
 				{
 					memset(modem_data, 0, sizeof(modem_data));
 					modem_int_state = CFUN_1;
@@ -315,11 +300,16 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 			}
 		case CFUN_1: 								 //Рестарт модуля
 			{
-				if(modem_data[0] == 'O')
+				if(modem_data[0] == ('+')|| modem_data[0] == ('0'))
 				{
-					memset(modem_data, 0, sizeof(modem_data));										
-					modem_int_state = ATE;			
+															
+					modem_int_state = CPIN_CHECK;			
 					modem_init();
+					memset(modem_data, 0, sizeof(modem_data));
+					app_sched_event_put(NULL, NULL, serial_scheduled_ex);
+					app_sched_event_put(NULL, NULL, serial_scheduled_ex);
+					app_sched_event_put(NULL, NULL, serial_scheduled_ex);
+					app_sched_event_put(NULL, NULL, serial_scheduled_ex);
 					break;
 				}
 				else
@@ -328,9 +318,25 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 					break;
 				}
 			}
+		case CPIN_CHECK:						
+			{
+				if(modem_data[0] == '0')
+				{
+					memset(modem_data, 0, sizeof(modem_data));
+					modem_int_state = ATE;
+					modem_init();
+					break;
+				}
+				else
+				{
+					memset(modem_data, 0, sizeof(modem_data));
+					modem_init();
+					break;
+				}
+			}
 		case ATE:										//No echo mode
 			{
-				if(modem_data[0] == 'O')
+				if(modem_data[0] == ('O')|| modem_data[0] == ('0') || modem_data[0] == ('A'))
 				{
 					memset(modem_data, 0, sizeof(modem_data));
 					modem_int_state = ATV;
@@ -345,7 +351,7 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 			}
 		case ATV:										//Числовой формат ответов
 			{
-				if(modem_data[0] == '0')
+				if(modem_data[0] == ('0'))
 				{
 					memset(modem_data, 0, sizeof(modem_data));
 					modem_int_state = CMEE;
@@ -359,21 +365,6 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 				}
 			}
 		case CMEE:  							 	//Кодовый формат ошибок
-			{
-				if(modem_data[0] == '0')
-				{
-					memset(modem_data, 0, sizeof(modem_data));
-					modem_int_state = CPIN_CHECK;
-					modem_init();
-					break;
-				}
-				else
-				{
-					memset(modem_data, 0, sizeof(modem_data));
-					break;
-				}
-			}
-		case CPIN_CHECK:						
 			{
 				if(modem_data[0] == '0')
 				{
@@ -392,7 +383,7 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 			{
 				if(modem_data[0] == '+')
 				{
-					bool s = modem_s_q_check;
+					bool s = modem_s_q_check();
 					if(s == true)
 					{
 					memset(modem_data, 0, sizeof(modem_data));
@@ -402,6 +393,7 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 					}
 					else
 					{
+						printf("Low signal ERROR");
 						modem_int_state = ERROR;
 						break;
 					}
@@ -414,12 +406,20 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 			}
 		case CREG_CHECK:						//Проверка рекгестрации в сети
 			{
-				if(modem_data[0] == '0')
+				if(modem_data[0] == '+')
 				{
+					bool s = modem_reg_chck();
+					if(s == true)
+					{
 					memset(modem_data, 0, sizeof(modem_data));
 					modem_int_state = CIPSHUT;
 					modem_init();
 					break;
+					}
+					else
+					{
+						modem_init();
+					}
 				}
 				else
 				{
@@ -471,7 +471,28 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 
 
 
-
+void rx_read()
+{
+//	uint32_t err_code;
+//	uint8_t buf[128];
+//	uint8_t i = 0;
+//	while(err_code == NRF_SUCCESS)
+//	{
+//		app_uart_get(buf+i);
+//		i++;
+//	}
+//	
+	
+	app_uart_get(modem_data+index);
+	index++;
+	if(modem_data[index-1] == 0x0A)
+	{
+		index = 0;
+		SEGGER_RTT_printf(0, "%s", modem_data);
+		app_sched_event_put(NULL, NULL, serial_scheduled_ex);
+	}
+	
+}
 
 
 
@@ -483,12 +504,12 @@ void uart_event_handle(app_uart_evt_t * p_event)
 		case APP_UART_DATA_READY:
 		{
 		rx_read();
-    app_sched_event_put(NULL, NULL, serial_scheduled_ex);
 		}
 		default:
 			break;
 	}
 }
+
 
 
 /**
@@ -500,14 +521,14 @@ int main(void)
 		
 		scheduler_init();
 	
-    bsp_board_leds_init();
+   // bsp_board_leds_init();
 
     const app_uart_comm_params_t comm_params =
       {
-          RX_PIN,
+					RX_PIN,
           TX_PIN,
-          UART_PIN_DISCONNECTED,
-          UART_PIN_DISCONNECTED,
+          RTS_PIN_NUMBER,
+          CTS_PIN_NUMBER,
           APP_UART_FLOW_CONTROL_DISABLED,
           false,
           NRF_UART_BAUDRATE_115200
@@ -522,7 +543,7 @@ int main(void)
 
     APP_ERROR_CHECK(err_code);
 
-    printf("\r\nStart: \r\n");
+    //printf("\r\nStart: \r\n");
 			
 			
 		//printf("Hello World \r\n");
