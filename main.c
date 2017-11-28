@@ -190,52 +190,62 @@ void modem_init()
 		case AT:  									 //Проверка доступен ли модуль
 			{
 				//at_write("");
+				app_uart_flush();
 				printf("AT\r\n");
 				break;
 			}
 		case CFUN:
 			{
 				//at_write("+CFUN=0");
+				app_uart_flush();
 				printf("AT+CFUN=0\r\n");
 				break;
 			}
 		case CFUN_1: 								 //Рестарт модуля
 			{
+				app_uart_flush();
 				printf("AT+CFUN=1,1\r\n");
 				break;
 			}
 		case ATE:										//No echo mode
 			{
-					printf("ATE0\r\n");
+				app_uart_flush();
+				printf("ATE0\r\n");
 				break;
 			}
 		case ATV:										//Числовой формат ответов
 			{
+				app_uart_flush();
 				printf("ATV0\r\n");
 				break;
 			}
 		case CMEE:  							 	//Кодовый формат ошибок
 			{
+				app_uart_flush();
 				printf("AT+CMEE=1\r\n");
 				break;
 			}
 		case CPIN_CHECK:						
 			{
+				app_uart_flush();
 				printf("AT+CPIN=?\r\n");
 				break;
 			}
 		case CSQ_CHECK: 						//Проверка силы сигнала
 			{
+				app_uart_flush();
 				printf("AT+CSQ\r\n");
 				break;
 			}
 		case CREG_CHECK:						//Проверка рекгестрации в сети
 			{
+				app_uart_flush();
 				printf("AT+CREG?\r\n");
 				break;
 			}
 		case CIPSHUT:								//TCP restart
 			{
+				app_uart_flush();
 				printf("AT+CIPSHUT\r\n");
 			}
 		case CGTT_CHECK:            //проверка готовности модуля для установления связи
@@ -311,7 +321,7 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 															
 					modem_int_state = CPIN_CHECK;			
 					memset(modem_data, 0, sizeof(modem_data));
-					app_timer_start(uart_timer, APP_TIMER_TICKS(10000), NULL);
+					app_timer_start(uart_timer, APP_TIMER_TICKS(11000), NULL);
 					break;
 				}
 				else
@@ -515,7 +525,7 @@ void uart_event_handle(app_uart_evt_t * p_event)
 
 void timer_timeout_handler(void * p_context)
 {
-	modem_init();
+	app_sched_event_put(NULL, NULL, modem_init);
 }
 
 static void lfclk_config(void)
