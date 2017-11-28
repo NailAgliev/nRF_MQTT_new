@@ -92,6 +92,12 @@ uint8_t index = 0;
 
 void (*p_func)(void *p_event_data, uint16_t event_size);
 
+char *apn 					= "internet.mts.ru";
+char *user					= "mts";
+char *pass					= "mts";
+char *server_address= "m20.cloudmqtt.com";
+char *server_port   = "14974";
+
 //const nrf_drv_timer_t TIMER = NRF_DRV_TIMER_INSTANCE(0);
 
 
@@ -107,11 +113,14 @@ enum {
 	CSQ_CHECK,
 	CREG_CHECK,
 	CIPSHUT,
-	CGTT_CHECK,
+	CGATT_CHECK,
+	CGATT_CHECK_OK,
 	CIPQSEND,
 	CIPRXGET,
 	CSTT,
 	CIICR,
+	CIFSR,
+	CIPSTART,
 	OK, //15
 	ERROR,
 } modem_int_state;
@@ -158,6 +167,17 @@ bool modem_reg_chck()
 	return false;
 }
 
+bool cgatt_check()
+{
+	if(modem_data[8] == '1')
+	{
+		return true;
+	}
+	return false;
+		
+}
+
+
 
 void at_write(char second[])         //отправка комад модулю
 {
@@ -167,6 +187,32 @@ void at_write(char second[])         //отправка комад модулю
     printf("%s%s%s", first, second, third);
 	
 		SEGGER_RTT_printf(0, "%s%s%s", first, second, third);
+		
+}
+
+void at_write_apn(const char apn[],const char user[],const char pass[])         //отправка комад модулю
+{
+		const char *start  = "AT+CSTT=";
+    const char *end	 = "\r\n";
+		
+		
+	
+    printf("%s\"%s\",\"%s\",\"%s\"%s", start, apn, user, pass, end);
+	
+		SEGGER_RTT_printf(0, "%s\"%s\",\"%s\",\"%s\"%s", start, apn, user, pass, end);
+		
+}
+
+void at_write_tcp(const char server_address[],const char server_port[])         //отправка комад модулю
+{
+		const char *start  = "AT+CIPSTART=\"TCP\",\"";
+    const char *end	 = "\r\n";
+		
+		
+	
+    printf("%s%s\",\"%s\"%s", start, server_address, server_port, end);
+	
+		SEGGER_RTT_printf(0, "%s%s\",\"%s\"%s", start, server_address, server_port, end);
 		
 }
 
@@ -237,26 +283,49 @@ void modem_init()
 			{
 				app_uart_flush();
 				at_write("+CIPSHUT");
+				break;
 			}
-		case CGTT_CHECK:            //проверка готовности модуля для установления связи
+		case CGATT_CHECK:            //проверка готовности модуля для установления связи
 			{
-				
+				app_uart_flush();
+				at_write("+CGATT?");
+				break;
 			}
 		case CIPRXGET:							//Ручное получение полученных сообщений
 			{
-				
+				app_uart_flush();
+				at_write("+CIPRXGET=1");
+				break;
 			}
 		case CIPQSEND:							//Режим отправки без потверждения получения		
 			{
-				
+				app_uart_flush();
+				at_write("+CIPQSEND=1");
+				break;
 			}
 		case CSTT:									//Конфигурация APN
 			{
-				
+				app_uart_flush();
+				at_write_apn(apn, user, pass);
+				break;
 			}
 		case CIICR:									//Влючение GPRS
 			{
-				
+				app_uart_flush();
+				at_write("+CIICR");
+				break;
+			}
+		case CIFSR:
+			{
+				app_uart_flush();
+				at_write("+CIFSR");
+				break;
+			}
+		case CIPSTART:
+			{
+				app_uart_flush();
+				at_write_tcp(server_address, server_port);
+				break;
 			}
 		default:
 			break;
@@ -421,6 +490,7 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 					else
 					{
 						app_timer_start(uart_timer, APP_TIMER_TICKS(1000), NULL);
+						break;
 					}
 				}
 				else
@@ -434,7 +504,7 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 				if(modem_data[0] == 'S')
 				{
 					memset(modem_data, 0, sizeof(modem_data));
-					modem_int_state = CGTT_CHECK;
+					modem_int_state = CGATT_CHECK;
 					modem_init();
 					break;
 				}
@@ -444,26 +514,136 @@ void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      //ра�
 					break;
 				}
 			}
-		case CGTT_CHECK:            //проверка готовности модуля для установления связи
+		case CGATT_CHECK:            //проверка готовности модуля для установления связи
 			{
+				if(modem_data[0] == '+')
+				{
+					bool s;
+					s = cgatt_check();
+					if(s == true)
+					{
+						memset(modem_data, 0, sizeof(modem_data));
+						modem_int_state = CGATT_CHECK_OK;
+						break;
+					}
+					else
+						memset(modem_data, 0, sizeof(modem_data));
+						app_timer_start(uart_timer, APP_TIMER_TICKS(1000), NULL);
+						break;
+				}
+				else
+				{
+					memset(modem_data, 0, sizeof(modem_data));
+					break;
+				}
 				
+			}
+		case CGATT_CHECK_OK:
+			{
+				if(modem_data[0] == ('0'))
+				{
+					memset(modem_data, 0, sizeof(modem_data));
+					modem_int_state = CIPRXGET;
+					modem_init();
+					break;
+				}
+				else
+				{
+					memset(modem_data, 0, sizeof(modem_data));
+					break;
+				}
 			}
 		case CIPRXGET:							//Ручное получение полученных сообщений
 			{
-				
+				if(modem_data[0] == ('0'))
+				{
+					memset(modem_data, 0, sizeof(modem_data));
+					modem_int_state = CIPQSEND;
+					modem_init();
+					break;
+				}
+				else
+				{
+					memset(modem_data, 0, sizeof(modem_data));
+					break;
+				}
 			}
 		case CIPQSEND:							//Режим отправки без потверждения получения		
 			{
-				
+				if(modem_data[0] == ('0'))
+				{
+					memset(modem_data, 0, sizeof(modem_data));
+					modem_int_state = CSTT;
+					modem_init();
+					break;
+				}
+				else
+				{
+					memset(modem_data, 0, sizeof(modem_data));
+					break;
+				}
 			}
 		case CSTT:									//Конфигурация APN
 			{
-				
+				if(modem_data[0] == ('0'))
+				{
+					memset(modem_data, 0, sizeof(modem_data));
+					modem_int_state = CIICR;
+					modem_init();
+					break;
+				}
+				else
+				{
+					memset(modem_data, 0, sizeof(modem_data));
+					break;
+				}
 			}
 		case CIICR:									//Влючение GPRS
 			{
-				
+					if(modem_data[0] == ('0'))
+				{
+					memset(modem_data, 0, sizeof(modem_data));
+					modem_int_state = CIFSR;
+					modem_init();
+					break;
+				}
+				else
+				{
+					memset(modem_data, 0, sizeof(modem_data));
+					break;
+				}
 			}
+		case CIFSR:									//Влючение GPRS
+			{
+					if(strlen(modem_data) > 6)
+				{
+					memset(modem_data, 0, sizeof(modem_data));
+					modem_int_state = CIPSTART;
+					modem_init();
+					break;
+				}
+				else
+				{
+					memset(modem_data, 0, sizeof(modem_data));
+					break;
+				}
+			}
+		case CIPSTART:									//Подключение к серверу
+			{
+					if(modem_data[0] == ('C'))
+				{
+					memset(modem_data, 0, sizeof(modem_data));
+					modem_int_state = OK;
+					modem_init();
+					break;
+				}
+				else
+				{
+					memset(modem_data, 0, sizeof(modem_data));
+					break;
+				}
+			}
+		
 		default:
 			break;			
 	}
