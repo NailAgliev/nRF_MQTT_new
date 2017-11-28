@@ -11,11 +11,15 @@ static  char *user					= "mts";
 static  char *pass					= "mts";
 static  char *server_address= "m20.cloudmqtt.com";
 static  char *server_port   = "14974";
+static  char *client_id     = "modem";
+static  char *server_login  = "iviqnyll";
+static  char *server_pass   = "TOOXoaHFQ8vi";
 
 static void scheduler_init(void)
 {
     APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
 }
+
 
 static bool modem_s_q_check()
 {
@@ -86,6 +90,24 @@ static void at_write_tcp(const char server_address[],const char server_port[])  
 		SEGGER_RTT_printf(0, "%s%s\",\"%s\"%s", start, server_address, server_port, end);
 		
 }
+
+static void at_write_send(const uint8_t length)         //отправка комад модулю
+{
+		const char *start  = "AT+CIPSEND=";
+    const char *end	 = "\r\n";
+		
+	
+		
+	
+    printf("%s%d%s", start, length, end);
+	
+		SEGGER_RTT_printf(0, "%s%s\",\"%s\"%s", start, server_address, server_port, end);
+		
+}
+
+
+
+
 
 static void modem_init()
 {
@@ -580,6 +602,25 @@ static void lfclk_config(void)
     nrf_drv_clock_lfclk_request(NULL);
 }
 
+static void mqtt_login(const char *client_id, const char *server_login, const char *server_pass)
+{
+	char *package[40];
+	
+	
+	
+	
+	
+}
+
+
+
+
+
+
+
+
+
+
 void modem_conect()
 {
 	 uint32_t err_code;
@@ -616,5 +657,16 @@ void modem_conect()
 			
 		modem_init();
 	
+}
+void modem_send()
+{
+	if(modem_int_state == OK)
+	{
+		if(modem_send_state == REDY)
+		{
+			mqtt_login(client_id, server_login, server_pass);
+			at_write_send(8);
+		}
+	}
 }
 

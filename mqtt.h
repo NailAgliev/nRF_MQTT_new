@@ -54,6 +54,12 @@ static enum {
 	ERROR,
 } modem_int_state;
 
+static enum{
+	REDY,
+	WAIT_CURSOR,
+	WAIT_CONFIRM,
+} modem_send_state;
+
 void modem_conect();
 
 #endif //MQTT_H__
