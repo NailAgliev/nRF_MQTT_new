@@ -71,7 +71,24 @@ static enum{
 	DATA,
 } modem_pub_state;
 
-void modem_conect();
+typedef struct{
+	char *apn; 					
+	char *user;					
+	char *pass;					
+} modem_config_t;
+
+typedef struct{
+	char *server_address;
+	char *server_port;   
+	char *client_id;     
+	char *server_login;  
+	char *server_pass;   
+	char *topic_name;		
+	char *content;				
+} mqtt_config_t;
+
+
+void modem_conect(modem_config_t * p_modem_config, mqtt_config_t *	p_mqtt_config);
 
 
 #endif //MQTT_H__

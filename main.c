@@ -64,12 +64,32 @@
 
 #include "mqtt.h"
 
+
+
+
+
+modem_config_t my_modem_config = {
+	.apn 					= "internet.mts.ru",
+	.user					= "mts",
+	.pass					= "mts",
+};
+
+mqtt_config_t my_mqtt_config = {
+	.server_address= "m20.cloudmqtt.com",
+	.server_port   = "14974",
+	.client_id     = "modem",
+	.server_login  = "iviqnyll",
+	.server_pass   = "TOOXoaHFQ8vi",
+	.topic_name		= "init",
+	.content				= "OK",
+};
+
 /**
  * @brief Function for main application entry.
  */
 int main(void)
 {
-		modem_conect();
+		modem_conect(&my_modem_config, &my_mqtt_config);
 			
 		while (true)
     {

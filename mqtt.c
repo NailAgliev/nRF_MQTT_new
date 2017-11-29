@@ -4,16 +4,15 @@ static  uint8_t modem_data[128];
 
 static  uint8_t index = 0;
 
-static  char *apn 					= "internet.mts.ru"; 
-static  char *user					= "mts";
-static  char *pass					= "mts";
-static  char *server_address= "m20.cloudmqtt.com";
-static  char *server_port   = "14974";
-static  char *client_id     = "modem";
-static  char *server_login  = "iviqnyll";
-static  char *server_pass   = "TOOXoaHFQ8vi";
-static 	char *topic_name		= "init";
-static  char *content				= "OK";
+
+modem_config_t modem_config;
+
+mqtt_config_t mqtt_config;
+	
+	
+	
+
+
 
 static void scheduler_init(void)
 {
@@ -258,11 +257,11 @@ static void modem_publish()
 	{					
 		if(modem_conect_state == REDY)					
 		{					
-			mqtt_connect(client_id, server_login, server_pass);					
+			mqtt_connect(mqtt_config.client_id, mqtt_config.server_login, mqtt_config.server_pass);					
 		}					
 		if(modem_conect_state == CONECTED)					
 		{					
-			mqtt_publish(topic_name, content);					
+			mqtt_publish(mqtt_config.topic_name, mqtt_config.content);					
 		}					
 	}					
 }					
@@ -355,7 +354,7 @@ static void modem_init()
 		case CSTT:																																															//Конфигурация APN					
 			{														
 				app_uart_flush();														
-				at_write_apn(apn, user, pass);														
+				at_write_apn(modem_config.apn, modem_config.user, modem_config.pass);														
 				break;														
 			}														
 		case CIICR:																																															//Влючение GPRS					
@@ -373,7 +372,7 @@ static void modem_init()
 		case CIPSTART:					
 			{					
 				app_uart_flush();					
-				at_write_tcp(server_address, server_port);					
+				at_write_tcp(mqtt_config.server_address, mqtt_config.server_port);					
 				break;					
 			}					
 		default:					
@@ -382,7 +381,7 @@ static void modem_init()
 }					
 					
 					
-static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)    								  						 //работает по прирыванию
+static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)    								  						//работает по прирыванию
 {					
 	if(modem_int_state < OK)					
 	{					
@@ -744,7 +743,7 @@ static void serial_scheduled_conect (void * p_event_data, uint16_t event_size)
 						{
 							memset(modem_data, 0, sizeof(modem_data));
 							modem_conect_state = DATA_SEND;
-							mqtt_connect(client_id, server_login, server_pass);
+							mqtt_connect(mqtt_config.client_id, mqtt_config.server_login, mqtt_config.server_pass);
 						}
 						break;
 				}
@@ -764,7 +763,7 @@ static void serial_scheduled_conect (void * p_event_data, uint16_t event_size)
 					if(modem_data[0] == '+')
 						{
 							memset(modem_data, 0, sizeof(modem_data));
-							mqtt_connect(client_id, server_login, server_pass);
+							mqtt_connect(mqtt_config.client_id, mqtt_config.server_login, mqtt_config.server_pass);
 						}
 						else
 						{
@@ -792,7 +791,7 @@ static void serial_scheduled_publish (void * p_event_data, uint16_t event_size)
 						{
 							memset(modem_data, 0, sizeof(modem_data));
 							modem_pub_state = DATA;
-							mqtt_publish(topic_name, content);
+							mqtt_publish(mqtt_config.topic_name, mqtt_config.content);
 						}
 						break;
 				}
@@ -852,10 +851,24 @@ static void lfclk_config(void)
 }
 
 
-void modem_conect()
+void modem_conect(modem_config_t * p_modem_config, mqtt_config_t *	p_mqtt_config)
 {
-	 uint32_t err_code;
+		uint32_t err_code;
+	
+		modem_config.apn 	= p_modem_config->apn;
+		modem_config.user	= p_modem_config->user;
+		modem_config.pass	= p_modem_config->pass;
 		
+		mqtt_config.server_address	= p_mqtt_config->server_address;
+	  mqtt_config.server_port   	= p_mqtt_config->server_port;   
+	  mqtt_config.client_id     	= p_mqtt_config->client_id;     
+	  mqtt_config.server_login   = p_mqtt_config->server_login;  
+	  mqtt_config.server_pass    =	p_mqtt_config->server_pass;   
+		mqtt_config.topic_name		  = p_mqtt_config->topic_name;		
+	  mqtt_config.content				= p_mqtt_config->content;				
+	
+	
+	
 		scheduler_init();
 	
 		lfclk_config();
