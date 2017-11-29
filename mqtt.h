@@ -64,6 +64,14 @@ static enum{
 	CONECT_ERROR,
 } modem_conect_state;
 
+
+static enum{
+	ZERO,
+	CURSOR,
+	DATA,
+} modem_pub_state;
+
 void modem_conect();
+
 
 #endif //MQTT_H__

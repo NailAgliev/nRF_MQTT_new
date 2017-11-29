@@ -14,6 +14,8 @@ static  char *server_port   = "14974";
 static  char *client_id     = "modem";
 static  char *server_login  = "iviqnyll";
 static  char *server_pass   = "TOOXoaHFQ8vi";
+static 	char *topic_name		= "init";
+static  char *content				= "OK";
 
 static void scheduler_init(void)
 {
@@ -191,8 +193,69 @@ static void mqtt_connect(const char *client_id, const char *server_login, const 
 		}
 }
 
+void mqtt_publish(const char *topic_name, const char *content)
+{
+	const uint8_t pub_flag				= 0x31;
+	
+	uint16_t topic_name_length 		= strlen(topic_name);
+	
+	uint16_t content_length 			= strlen(content);
+	
+	uint8_t package_length      	= (topic_name_length + content_length +4);
+	
+	const char *start  = "AT+CIPSEND=";
+	
+  const char *end	 = "\r\n";	
+	
+	union{
+		uint16_t length;
+		struct{
+					uint8_t b_lsb;
+					uint8_t b_msb;
+		}byte;
+	}btopicl;
+	
+	union{
+		uint16_t length;
+		struct{
+					uint8_t b_lsb;
+					uint8_t b_msb;
+		}byte;
+	}bcontentl;
+	
+	btopicl.length = topic_name_length;
+	
+	switch (modem_pub_state)
+		{
+			case ZERO:
+				{
+					app_uart_flush();
+					printf("%s%d%s", start, package_length+2, end);
+					modem_pub_state = CURSOR;
+					break;
+				}
+			case DATA:
+				{
+					app_uart_put(pub_flag);
+					
+					app_uart_put(package_length);
+					
+					app_uart_put(btopicl.byte.b_msb);
+					app_uart_put(btopicl.byte.b_lsb);
+					
+					printf("%s", topic_name);
+					
+					app_uart_put(bcontentl.byte.b_msb);
+					app_uart_put(bcontentl.byte.b_lsb);
+					
+					printf("%s", content);	
+				}
+		}
+	
+}
 
-void modem_send()
+
+static void modem_publish()
 {
 	if(modem_int_state == OK)
 	{
@@ -200,7 +263,10 @@ void modem_send()
 		{
 			mqtt_connect(client_id, server_login, server_pass);
 		}
-		
+		if(modem_conect_state == CONECTED)
+		{
+			mqtt_publish(topic_name, content);
+		}
 	}
 }
 
@@ -623,7 +689,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      
 					memset(modem_data, 0, sizeof(modem_data));
 					modem_int_state = OK;
 					modem_init();
-					modem_send();
+					modem_publish();
 					break;
 				}
 				else
@@ -665,6 +731,7 @@ static void rx_red_confirm()
 		if(modem_data[23] == 0x00)
 			{
 				modem_conect_state = CONECTED;
+				modem_publish();
 			}
 			else if(modem_data[23] == 0x01 || modem_data[23] == 0x02 || modem_data[23] == 0x03 || modem_data[23] == 0x04 || modem_data[23] == 0x05)  //когда будет время добавить ошибки подключения
 			{
@@ -674,7 +741,7 @@ static void rx_red_confirm()
 }
 
 
-static void serial_scheduled_send (void * p_event_data, uint16_t event_size)
+static void serial_scheduled_conect (void * p_event_data, uint16_t event_size)
 {
 	switch (modem_conect_state)
 		{
@@ -722,6 +789,23 @@ static void serial_scheduled_send (void * p_event_data, uint16_t event_size)
 		}
 }
 
+static void serial_scheduled_publish (void * p_event_data, uint16_t event_size)
+{
+	switch (modem_pub_state)
+		{
+		case CURSOR:
+				{
+					app_uart_get(modem_data);
+					if(modem_data[0] == '>')
+						{
+							memset(modem_data, 0, sizeof(modem_data));
+							modem_pub_state = DATA;
+							mqtt_publish(topic_name, content);
+						}
+						break;
+				}
+			}
+}
 
 static void uart_event_handle(app_uart_evt_t * p_event)
 {
@@ -729,9 +813,14 @@ static void uart_event_handle(app_uart_evt_t * p_event)
 	{
 		case APP_UART_DATA_READY:
 		{
-			if(modem_conect_state != REDY)
+			if(modem_pub_state == CURSOR)
 			{
-				app_sched_event_put(NULL, NULL, serial_scheduled_send);
+				app_sched_event_put(NULL, NULL, serial_scheduled_publish);
+				break;
+			}
+			if(modem_conect_state != REDY  && modem_conect_state != CONECTED)
+			{
+				app_sched_event_put(NULL, NULL, serial_scheduled_conect);
 				break;
 			}
 			if(modem_int_state == AT)
