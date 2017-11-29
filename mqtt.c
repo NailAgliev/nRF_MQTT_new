@@ -95,13 +95,8 @@ static void at_write_send(const uint8_t length)         //отправка ко�
 {
 		const char *start  = "AT+CIPSEND=";
     const char *end	 = "\r\n";
-		
-	
-		
 	
     printf("%s%d%s", start, length, end);
-	
-		SEGGER_RTT_printf(0, "%s%s\",\"%s\"%s", start, server_address, server_port, end);
 		
 }
 
@@ -568,12 +563,32 @@ static void rx_read()
 	
 }
 
+static void serial_scheduled_send (void * p_event_data, uint16_t event_size)
+{
+	switch (modem_send_state)
+	{
+		case WAIT_CURSOR:
+		{
+			app_uart_get(modem_data);
+				if(modem_data[0] == '>')
+				{
+					modem_send_state == WAIT_CONFIRM;
+				}
+		}
+	}
+}
+
+
 static void uart_event_handle(app_uart_evt_t * p_event)
 {
 	switch(p_event->evt_type)
 	{
 		case APP_UART_DATA_READY:
 		{
+			if(modem_send_state == WAIT_CURSOR)
+			{
+				app_sched_event_put(NULL, NULL, serial_scheduled_send);
+			}
 			if(modem_int_state == AT)
 			{
 				app_timer_stop_all();
@@ -602,13 +617,90 @@ static void lfclk_config(void)
     nrf_drv_clock_lfclk_request(NULL);
 }
 
-static void mqtt_login(const char *client_id, const char *server_login, const char *server_pass)
+
+static void mqtt_connect(const char *client_id, const char *server_login, const char *server_pass)
 {
-	char *package[40];
+	const uint8_t con_flag					= 0x10;
+																																									//1 hour
+	const uint8_t con_fix_heder[10] = {0x00, 0x04, 'M', 'Q', 'T', 'T', 0x04, 0xC2, 0x8C, 0xA0};
 	
+	uint16_t client_id_length 			= strlen(client_id);
+				
+	uint16_t server_login_length 		= strlen(server_login);
+				
+	uint16_t server_pass_length  		= strlen(server_pass);
+				
+	uint8_t package_length      		= (client_id_length + server_login_length + server_pass_length + 16);
 	
+	const char *start  = "AT+CIPSEND=";
 	
+  const char *end	 = "\r\n";	
 	
+	union{
+		uint16_t length;
+		struct{
+					uint8_t b_lsb;
+					uint8_t b_msb;
+		}byte;
+	}bidl;
+	
+	bidl.length = client_id_length;
+	
+	union{
+		uint16_t length;
+		struct{
+					uint8_t b_lsb;
+					uint8_t b_msb;
+		}byte;
+	}blogl;
+	
+	blogl.length = server_login_length;
+	
+	union{
+		uint16_t length;
+		struct{
+					uint8_t b_lsb;
+					uint8_t b_msb;
+		}byte;
+	}bpassl;
+	
+	bpassl.length = server_pass_length;
+		
+	switch (modem_send_state)
+	{
+		case REDY:
+		{
+			app_uart_flush();
+			printf("%s%d%s", start, package_length+2, end);
+			modem_send_state = WAIT_CURSOR;
+			break;
+		}
+		
+	}	
+	
+	app_uart_put(con_flag);
+	
+	app_uart_put(package_length);
+	
+	for(uint8_t i = 0; i != sizeof(con_fix_heder); i++)
+	{
+		app_uart_put(con_fix_heder[i]);
+	}
+	
+	app_uart_put(bidl.byte.b_msb);
+	app_uart_put(bidl.byte.b_lsb);
+	
+	printf("%s", client_id);
+	
+	app_uart_put(blogl.byte.b_msb);
+	app_uart_put(blogl.byte.b_lsb);
+	
+	printf("%s", server_login);
+	
+	app_uart_put(bpassl.byte.b_msb);
+	app_uart_put(bpassl.byte.b_lsb);
+	
+	printf("%s", server_pass);
 	
 }
 
@@ -655,7 +747,9 @@ void modem_conect()
 
     APP_ERROR_CHECK(err_code);
 			
-		modem_init();
+		//modem_init();
+		
+		mqtt_connect(client_id, server_login, server_pass);
 	
 }
 void modem_send()
@@ -664,8 +758,8 @@ void modem_send()
 	{
 		if(modem_send_state == REDY)
 		{
-			mqtt_login(client_id, server_login, server_pass);
 			at_write_send(8);
+			mqtt_connect(client_id, server_login, server_pass);
 		}
 	}
 }
