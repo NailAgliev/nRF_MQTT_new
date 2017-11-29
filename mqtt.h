@@ -57,8 +57,12 @@ static enum {
 static enum{
 	REDY,
 	WAIT_CURSOR,
+	DATA_SEND,
 	WAIT_CONFIRM,
-} modem_send_state;
+	CONECT_CHECK,
+	CONECTED,
+	CONECT_ERROR,
+} modem_conect_state;
 
 void modem_conect();
 

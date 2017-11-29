@@ -91,17 +91,118 @@ static void at_write_tcp(const char server_address[],const char server_port[])  
 		
 }
 
-static void at_write_send(const uint8_t length)         //отправка комад модулю
+static void mqtt_connect(const char *client_id, const char *server_login, const char *server_pass)
 {
-		const char *start  = "AT+CIPSEND=";
-    const char *end	 = "\r\n";
+	const uint8_t con_flag					= 0x10;
+																																									//1 hour
+	const uint8_t con_fix_heder[10] = {0x00, 0x04, 'M', 'Q', 'T', 'T', 0x04, 0xC2, 0x8C, 0xA0};
 	
-    printf("%s%d%s", start, length, end);
+	uint16_t client_id_length 			= strlen(client_id);
+				
+	uint16_t server_login_length 		= strlen(server_login);
+				
+	uint16_t server_pass_length  		= strlen(server_pass);
+				
+	uint8_t package_length      		= (client_id_length + server_login_length + server_pass_length + 16);
+	
+	const char *start  = "AT+CIPSEND=";
+	
+  const char *end	 = "\r\n";	
+	
+	union{
+		uint16_t length;
+		struct{
+					uint8_t b_lsb;
+					uint8_t b_msb;
+		}byte;
+	}bidl;
+	
+	bidl.length = client_id_length;
+	
+	union{
+		uint16_t length;
+		struct{
+					uint8_t b_lsb;
+					uint8_t b_msb;
+		}byte;
+	}blogl;
+	
+	blogl.length = server_login_length;
+	
+	union{
+		uint16_t length;
+		struct{
+					uint8_t b_lsb;
+					uint8_t b_msb;
+		}byte;
+	}bpassl;
+	
+	bpassl.length = server_pass_length;
 		
+	switch (modem_conect_state)
+		{
+			case REDY:
+				{
+					app_uart_flush();
+					printf("%s%d%s", start, package_length+2, end);
+					modem_conect_state = WAIT_CURSOR;
+					break;
+				}
+			case DATA_SEND:
+				{	
+					app_uart_flush();
+					
+					app_uart_put(con_flag);
+					
+					app_uart_put(package_length);
+					
+					for(uint8_t i = 0; i != sizeof(con_fix_heder); i++)
+					{
+						app_uart_put(con_fix_heder[i]);
+					}
+					
+					app_uart_put(bidl.byte.b_msb);
+					app_uart_put(bidl.byte.b_lsb);
+					
+					printf("%s", client_id);
+					
+					app_uart_put(blogl.byte.b_msb);
+					app_uart_put(blogl.byte.b_lsb);
+					
+					printf("%s", server_login);
+					
+					app_uart_put(bpassl.byte.b_msb);
+					app_uart_put(bpassl.byte.b_lsb);
+					
+					printf("%s", server_pass);
+					
+					break;
+				}
+			case WAIT_CONFIRM:
+				{
+					app_uart_flush();
+					at_write("+CIPRXGET=2,4");
+					break;
+				}
+			case CONECTED:
+			{
+				break;
+			}
+		}
 }
 
 
-
+void modem_send()
+{
+	if(modem_int_state == OK)
+	{
+		if(modem_conect_state == REDY)
+		{
+			mqtt_connect(client_id, server_login, server_pass);
+		}
+		
+	}
+}
 
 
 static void modem_init()
@@ -522,6 +623,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      
 					memset(modem_data, 0, sizeof(modem_data));
 					modem_int_state = OK;
 					modem_init();
+					modem_send();
 					break;
 				}
 				else
@@ -541,17 +643,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)      
 
 
 static void rx_read()
-{
-//	uint32_t err_code;
-//	uint8_t buf[128];
-//	uint8_t i = 0;
-//	while(err_code == NRF_SUCCESS)
-//	{
-//		app_uart_get(buf+i);
-//		i++;
-//	}
-//	
-	
+{	
 	app_uart_get(modem_data+index);
 	index++;
 	if(modem_data[index-1] == 0x0A)
@@ -560,22 +652,74 @@ static void rx_read()
 		SEGGER_RTT_printf(0, "%s", modem_data);
 		app_sched_event_put(NULL, NULL, serial_scheduled_ex);
 	}
-	
 }
+
+
+static void rx_red_confirm()
+{
+	app_uart_get(modem_data+index);
+	index++;
+	if(index == 27)
+	{
+		index = 0;
+		if(modem_data[23] == 0x00)
+			{
+				modem_conect_state = CONECTED;
+			}
+			else if(modem_data[23] == 0x01 || modem_data[23] == 0x02 || modem_data[23] == 0x03 || modem_data[23] == 0x04 || modem_data[23] == 0x05)  //когда будет время добавить ошибки подключения
+			{
+				modem_conect_state = CONECT_ERROR;
+			}
+	}
+}
+
 
 static void serial_scheduled_send (void * p_event_data, uint16_t event_size)
 {
-	switch (modem_send_state)
-	{
-		case WAIT_CURSOR:
+	switch (modem_conect_state)
 		{
-			app_uart_get(modem_data);
-				if(modem_data[0] == '>')
+			case WAIT_CURSOR:
 				{
-					modem_send_state == WAIT_CONFIRM;
+					app_uart_get(modem_data);
+					if(modem_data[0] == '>')
+						{
+							memset(modem_data, 0, sizeof(modem_data));
+							modem_conect_state = DATA_SEND;
+							mqtt_connect(client_id, server_login, server_pass);
+						}
+						break;
 				}
+			case DATA_SEND:
+				{
+					app_uart_get(modem_data);
+					if(modem_data[0] == 'D')
+						{
+							memset(modem_data, 0, sizeof(modem_data));
+							modem_conect_state = WAIT_CONFIRM;
+						}
+						break;
+				}
+			case WAIT_CONFIRM:
+				{
+					app_uart_get(modem_data);
+					if(modem_data[0] == '+')
+						{
+							memset(modem_data, 0, sizeof(modem_data));
+							mqtt_connect(client_id, server_login, server_pass);
+						}
+						else
+						{
+							memset(modem_data, 0, sizeof(modem_data));
+						}
+						break;
+				}
+			case CONECT_CHECK:
+				{
+					rx_red_confirm();
+					break;
+				}
+						
 		}
-	}
 }
 
 
@@ -585,9 +729,10 @@ static void uart_event_handle(app_uart_evt_t * p_event)
 	{
 		case APP_UART_DATA_READY:
 		{
-			if(modem_send_state == WAIT_CURSOR)
+			if(modem_conect_state != REDY)
 			{
 				app_sched_event_put(NULL, NULL, serial_scheduled_send);
+				break;
 			}
 			if(modem_int_state == AT)
 			{
@@ -595,6 +740,14 @@ static void uart_event_handle(app_uart_evt_t * p_event)
 				app_sched_event_put(NULL, NULL, serial_scheduled_ex);				
 			}
 			rx_read();
+		}
+		case APP_UART_TX_EMPTY:
+		{
+			if(modem_conect_state == WAIT_CONFIRM)
+					{
+						modem_conect_state = CONECT_CHECK;
+					}
+			break;
 		}
 		default:
 			break;
@@ -618,91 +771,6 @@ static void lfclk_config(void)
 }
 
 
-static void mqtt_connect(const char *client_id, const char *server_login, const char *server_pass)
-{
-	const uint8_t con_flag					= 0x10;
-																																									//1 hour
-	const uint8_t con_fix_heder[10] = {0x00, 0x04, 'M', 'Q', 'T', 'T', 0x04, 0xC2, 0x8C, 0xA0};
-	
-	uint16_t client_id_length 			= strlen(client_id);
-				
-	uint16_t server_login_length 		= strlen(server_login);
-				
-	uint16_t server_pass_length  		= strlen(server_pass);
-				
-	uint8_t package_length      		= (client_id_length + server_login_length + server_pass_length + 16);
-	
-	const char *start  = "AT+CIPSEND=";
-	
-  const char *end	 = "\r\n";	
-	
-	union{
-		uint16_t length;
-		struct{
-					uint8_t b_lsb;
-					uint8_t b_msb;
-		}byte;
-	}bidl;
-	
-	bidl.length = client_id_length;
-	
-	union{
-		uint16_t length;
-		struct{
-					uint8_t b_lsb;
-					uint8_t b_msb;
-		}byte;
-	}blogl;
-	
-	blogl.length = server_login_length;
-	
-	union{
-		uint16_t length;
-		struct{
-					uint8_t b_lsb;
-					uint8_t b_msb;
-		}byte;
-	}bpassl;
-	
-	bpassl.length = server_pass_length;
-		
-	switch (modem_send_state)
-	{
-		case REDY:
-		{
-			app_uart_flush();
-			printf("%s%d%s", start, package_length+2, end);
-			modem_send_state = WAIT_CURSOR;
-			break;
-		}
-		
-	}	
-	
-	app_uart_put(con_flag);
-	
-	app_uart_put(package_length);
-	
-	for(uint8_t i = 0; i != sizeof(con_fix_heder); i++)
-	{
-		app_uart_put(con_fix_heder[i]);
-	}
-	
-	app_uart_put(bidl.byte.b_msb);
-	app_uart_put(bidl.byte.b_lsb);
-	
-	printf("%s", client_id);
-	
-	app_uart_put(blogl.byte.b_msb);
-	app_uart_put(blogl.byte.b_lsb);
-	
-	printf("%s", server_login);
-	
-	app_uart_put(bpassl.byte.b_msb);
-	app_uart_put(bpassl.byte.b_lsb);
-	
-	printf("%s", server_pass);
-	
-}
 
 
 
@@ -746,21 +814,8 @@ void modem_conect()
                          err_code);
 
     APP_ERROR_CHECK(err_code);
-			
-		//modem_init();
 		
-		mqtt_connect(client_id, server_login, server_pass);
+		modem_init();
 	
-}
-void modem_send()
-{
-	if(modem_int_state == OK)
-	{
-		if(modem_send_state == REDY)
-		{
-			at_write_send(8);
-			mqtt_connect(client_id, server_login, server_pass);
-		}
-	}
 }
 
