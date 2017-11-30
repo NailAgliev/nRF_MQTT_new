@@ -55,7 +55,7 @@ typedef enum {
 } modem_int_state_t;
 
 typedef enum{
-	REDY,
+	READY,
 	WAIT_CURSOR,
 	DATA_SEND,
 	WAIT_CONFIRM,
@@ -84,17 +84,20 @@ typedef struct{
 	char *client_id;     
 	char *server_login;  
 	char *server_pass;   
-	volatile	char *topic_name;		
-	volatile	char *content;				
+	char *topic_name;		
+	char *content;			
 } mqtt_config_t;
 
+
+
+modem_conect_state_t modem_conect_state_check(void);
+
+modem_pub_state_t modem_pub_state_check(void);
 
 void modem_conect(modem_config_t * p_modem_config, mqtt_config_t *	p_mqtt_config);
 
 void mqtt_publish(char *topic_name_p, char *content_p);
 
-modem_conect_state_t modem_conect_state_check();
 
-modem_pub_state_t modem_pub_state_check();
 
 #endif //MQTT_H__

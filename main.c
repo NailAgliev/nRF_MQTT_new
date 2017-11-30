@@ -68,24 +68,24 @@
 
 
 
-modem_config_t my_modem_config = {
+modem_config_t my_modem_config = {    //стуктура для подключения к сети
 	.apn 					 	= "internet.mts.ru",
 	.user					 	= "mts",
 	.pass					 	= "mts",
 };
 
-mqtt_config_t my_mqtt_config = {
+mqtt_config_t my_mqtt_config = {    //структура подключения к серверу MQTT
 	.server_address	= "m20.cloudmqtt.com",
 	.server_port   	= "14974",
 	.client_id     	= "modem",
 	.server_login  	= "iviqnyll",
 	.server_pass   	= "TOOXoaHFQ8vi",
 	.topic_name		 	= "init",
-	.content			 	= "stas",
+	.content			 	= "OK",
 };
 
 
-char *topic = "temp";
+char *topic = "temp"; //название топика температуры
 char content[80]; 
 
 modem_conect_state_t modem_conect_state;
