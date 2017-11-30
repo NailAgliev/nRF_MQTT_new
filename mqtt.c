@@ -24,21 +24,21 @@ static void scheduler_init(void)
 }
 
 
-static bool modem_s_q_check() 																																							 //проверка силы сигнала
+static bool modem_s_q_check()//проверка силы сигнала
 {					
 	uint8_t comma 		=	0;					
-	while(modem_data[comma] != 0x2C)					
+	while(modem_data[comma] != 0x2C) //ищем запятую в массиве		
 	{					
 		comma++;					
 	}					
-	if(comma > 7)					
+	if(comma > 7)	//если перед заяпятой число больше 10 то запятая будет на восьмой позиции если меньше то на седьмой					
 	{					
 		return true;					
 	}					
 	return false;					
 }					
 					
-static bool modem_reg_chck() 																																								 //проверка регистрации в сети
+static bool modem_reg_chck()//проверка регистрации в сети
 {					
 	if(modem_data[9] == '1')					
 	{					
@@ -47,7 +47,7 @@ static bool modem_reg_chck() 																																								 //пров
 	return false;					
 }					
 					
-static bool cgatt_check()  																																									 //проверка доступности GPRS
+static bool cgatt_check()//проверка доступности GPRS
 {					
 	if(modem_data[8] == '1')					
 	{					
@@ -57,18 +57,18 @@ static bool cgatt_check()  																																									 //пров�
 							
 }					
 
-modem_conect_state_t modem_conect_state_check()																															 //проверка состояния подключения
+modem_conect_state_t modem_conect_state_check()//проверка состояния подключения
 {
 	return modem_conect_state;
 }
 
-modem_pub_state_t modem_pub_state_check()																																		 //проверка состояния отправки
+modem_pub_state_t modem_pub_state_check()//проверка состояния отправки
 {
 	return modem_pub_state;
 }
 
 					
-static void at_write(char second[])         																																 //отправка команд модулю
+static void at_write(char second[])//отправка команд модулю
 {					
 		const char *first  = "AT";					
     const char *third	 = "\r\n";					
@@ -79,7 +79,7 @@ static void at_write(char second[])         																																 //�
 							
 }					
 					
-static void at_write_apn(const char apn[],const char user[],const char pass[])        											 //подключение к провайдеру
+static void at_write_apn(const char apn[],const char user[],const char pass[])//подключение к провайдеру
 {					
 		const char *start  = "AT+CSTT=";					
     const char *end	 = "\r\n";					
@@ -92,7 +92,7 @@ static void at_write_apn(const char apn[],const char user[],const char pass[])  
 							
 }					
 					
-static void at_write_tcp(const char server_address[],const char server_port[])        											 //подключение к серверу
+static void at_write_tcp(const char server_address[],const char server_port[])//подключение к серверу
 {					
 		const char *start  = "AT+CIPSTART=\"TCP\",\"";					
     const char *end	 = "\r\n";					
@@ -105,7 +105,7 @@ static void at_write_tcp(const char server_address[],const char server_port[])  
 							
 }					
 					
-void mqtt_connect(const char *client_id, const char *server_login, const char *server_pass)					 				 //авторизация на сревере 
+void mqtt_connect(const char *client_id, const char *server_login, const char *server_pass)//авторизация на сревере 
 {									                                                                                           
 	const uint8_t con_flag					= 0x10;									                                                   
 																																									//1 hour									 
@@ -117,7 +117,7 @@ void mqtt_connect(const char *client_id, const char *server_login, const char *s
 													                                                                                   
 	uint16_t server_pass_length  		= strlen(server_pass);									                                   
 													                                                                                   
-	uint8_t package_length      		= (client_id_length + server_login_length + server_pass_length + 16				 );
+	uint8_t package_length      		= (client_id_length + server_login_length + server_pass_length + 16	);
 										                                                                                         
 	const char *start  = "AT+CIPSEND=";									                                                       
 										                                                                                         
@@ -205,7 +205,7 @@ void mqtt_connect(const char *client_id, const char *server_login, const char *s
 		}									                                                                                       
 }									                                                                                           
 									                                                                                           
-void mqtt_publish(char *topic_name_p, char *content_p)  																						 				 //отправка сообщения на сервер
+void mqtt_publish(char *topic_name_p, char *content_p)//отправка сообщения на сервер
 {
 	if(modem_conect_state == CONECTED)
 		{
@@ -274,7 +274,7 @@ void mqtt_publish(char *topic_name_p, char *content_p)  																						 	
 }
 					
 					
-static void modem_publish()																																									 //проверка подключения отправка подтверждения подключения
+static void modem_publish()//проверка подключения отправка подтверждения подключения
 {					
 	if(modem_int_state == OK)					
 	{					
@@ -290,7 +290,7 @@ static void modem_publish()																																									 //пров�
 }					
 					
 					
-static void modem_init()																																										 //Инициализация и подключение к серверу
+static void modem_init()//Инициализация и подключение к серверу
 {					
 						
 	switch(modem_int_state)					
@@ -404,7 +404,7 @@ static void modem_init()																																										 //Иници�
 }					
 					
 					
-static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)    								  						 //работает по прерыванию
+static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//работает по прерыванию
 {					                                                                                                   
 	if(modem_int_state < OK)					                                                                         
 	{					                                                                                                 
@@ -722,7 +722,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)    		
 					                                                                                                   
 					                                                                                                   
 					                                                                                                   
-static void rx_read()																																												 //собирает в строку
+static void rx_read()//собирает в строку
 {						                                                                                                 
 	app_uart_get(modem_data+index);					                                                                   
 	index++;					                                                                                         
@@ -735,7 +735,7 @@ static void rx_read()																																												 //собира
 }					                                                                                                   
 					                                                                                                   
 					                                                                                                   
-static void rx_red_confirm()																																								 //проверка успешности авторизации на сервере
+static void rx_red_confirm()//проверка успешности авторизации на сервере
 {
 	app_uart_get(modem_data+index);
 	index++;
@@ -755,11 +755,11 @@ static void rx_red_confirm()																																								 //пров�
 }
 
 
-static void serial_scheduled_conect (void * p_event_data, uint16_t event_size) 															 //хендлер прерыванию юарт во время подключения
+static void serial_scheduled_conect (void * p_event_data, uint16_t event_size)//хендлер прерыванию юарт во время подключения
 {
 	switch (modem_conect_state)
 		{
-		case WAIT_CURSOR:                      																																 	 //ждем курсор
+		case WAIT_CURSOR://ждем курсор
 				{
 					app_uart_get(modem_data);
 					if(modem_data[0] == '>')
@@ -770,7 +770,7 @@ static void serial_scheduled_conect (void * p_event_data, uint16_t event_size) 	
 						}
 						break;
 				}
-			case DATA_SEND:       																																								 //ждем DATA ACCEPT
+			case DATA_SEND://ждем DATA ACCEPT
 				{
 					app_uart_get(modem_data);
 					if(modem_data[0] == 'D')
@@ -780,7 +780,7 @@ static void serial_scheduled_conect (void * p_event_data, uint16_t event_size) 	
 						}
 						break;
 				}
-			case WAIT_CONFIRM:																																										 //ждем ответа от сервера
+			case WAIT_CONFIRM://ждем ответа от сервера
 				{
 					app_uart_get(modem_data);
 					if(modem_data[0] == '+')
@@ -794,7 +794,7 @@ static void serial_scheduled_conect (void * p_event_data, uint16_t event_size) 	
 						}
 						break;
 				}
-			case CONECT_CHECK:																																										 //обробатываем ответ
+			case CONECT_CHECK://обробатываем ответ
 				{
 					rx_red_confirm();
 					break;
@@ -803,11 +803,11 @@ static void serial_scheduled_conect (void * p_event_data, uint16_t event_size) 	
 		}
 }
 
-static void serial_scheduled_publish (void * p_event_data, uint16_t event_size)															 //хендлер прерыванию юарт во время отправки
+static void serial_scheduled_publish (void * p_event_data, uint16_t event_size)//хендлер прерыванию юарт во время отправки
 {
 	switch (modem_pub_state)
 		{
-		case CURSOR:																																														 //ждем курсор
+		case CURSOR:	//ждем курсор
 			{
 				app_uart_get(modem_data);
 				if(modem_data[0] == '>')
@@ -818,7 +818,7 @@ static void serial_scheduled_publish (void * p_event_data, uint16_t event_size)	
 					}
 					break;
 			}
-		case SEND:																																															 //ждем подтверждения отправки
+		case SEND:	//ждем подтверждения отправки
 			{
 				app_uart_get(modem_data);
 				if(modem_data[0] == 'D')
@@ -838,17 +838,17 @@ static void uart_event_handle(app_uart_evt_t * p_event)
 	{
 		case APP_UART_DATA_READY:
 		{
-			if(modem_pub_state == CURSOR  || modem_pub_state == SEND)																							 //при отправке
+			if(modem_pub_state == CURSOR  || modem_pub_state == SEND)	//при отправке
 			{
 				app_sched_event_put(NULL, NULL, serial_scheduled_publish);
 				break;
 			}
-			if(modem_conect_state != UNCONECTED  && modem_conect_state != CONECTED)																 //при подключении
+			if(modem_conect_state != UNCONECTED  && modem_conect_state != CONECTED)	//при подключении
 			{
 				app_sched_event_put(NULL, NULL, serial_scheduled_conect);
 				break;
 			}
-			if(modem_int_state == AT)																																							 //во время ожидания ответа от модема
+			if(modem_int_state == AT)	//во время ожидания ответа от модема
 			{
 				app_timer_stop_all();
 				app_sched_event_put(NULL, NULL, serial_scheduled_ex);				
@@ -857,7 +857,7 @@ static void uart_event_handle(app_uart_evt_t * p_event)
 		}
 		case APP_UART_TX_EMPTY:
 		{
-			if(modem_conect_state == WAIT_CONFIRM)																																 //ждем ответ от сервера
+			if(modem_conect_state == WAIT_CONFIRM)	//ждем ответ от сервера
 					{
 						modem_conect_state = CONECT_CHECK;
 						break;
