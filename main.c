@@ -86,9 +86,10 @@ mqtt_config_t my_mqtt_config = {
 
 
 char *topic = "temp";
-char *content = "Actual temperature: 10\r\n";
+char content[80]; 
 
 modem_conect_state_t modem_conect_state;
+modem_pub_state_t modem_pub_state;
 
 /**
  * @brief Function for main application entry.
@@ -126,8 +127,12 @@ int main(void)
 				
 				sprintf(content, "Actual temperature: %d\r\n", (int)temp);
 				
+				//SEGGER_RTT_printf(0, "%s", content);
+				
 				modem_conect_state = modem_conect_state_check();
-				if(modem_conect_state == CONECTED)
+				modem_pub_state = modem_pub_state_check();
+				
+				if(modem_conect_state == CONECTED && modem_pub_state == ZERO)
 				{
 					mqtt_publish(topic, content);
 					//nrf_delay_ms(500);

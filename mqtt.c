@@ -15,7 +15,13 @@ static	modem_conect_state_t modem_conect_state;
 
 static	modem_pub_state_t modem_pub_state;
 	
-
+static void send_string(char *string_p)
+{
+	for(uint8_t i = 0; i < strlen(string_p); i++)
+	{
+		app_uart_put((uint8_t)*(string_p + i));
+	}
+}
 
 
 static void scheduler_init(void)
@@ -60,6 +66,11 @@ static bool cgatt_check()  																																									 // пров
 modem_conect_state_t modem_conect_state_check()
 {
 	return modem_conect_state;
+}
+
+modem_pub_state_t modem_pub_state_check()
+{
+	return modem_pub_state;
 }
 
 					
@@ -255,22 +266,20 @@ void mqtt_publish(char *topic_name_p, char *content_p)  																						 /
 					app_uart_flush();
 					
 					app_uart_put(pub_flag);	
-
-					modem_conect_state =	CONECT_ERROR;					
 										
 					app_uart_put(package_length);					
 										
 					app_uart_put(btopicl.byte.b_msb);					
 					app_uart_put(btopicl.byte.b_lsb);					
 										
-					printf("%s", *topic_name_p);					
+					send_string(topic_name_p);					
 										
 					app_uart_put(bcontentl.byte.b_msb);					
 					app_uart_put(bcontentl.byte.b_lsb);					
 										
-					printf("%s", *content_p);		
+					send_string(content_p);		
 
-					modem_pub_state = ZERO;
+					modem_pub_state = SEND;
 					break;
 				}					
 		}
@@ -812,17 +821,28 @@ static void serial_scheduled_publish (void * p_event_data, uint16_t event_size)
 	switch (modem_pub_state)
 		{
 		case CURSOR:
-				{
-					app_uart_get(modem_data);
-					if(modem_data[0] == '>')
-						{
-							memset(modem_data, 0, sizeof(modem_data));
-							modem_pub_state = DATA;
-							mqtt_publish(mqtt_config.topic_name, mqtt_config.content);
-						}
-						break;
-				}
+			{
+				app_uart_get(modem_data);
+				if(modem_data[0] == '>')
+					{
+						memset(modem_data, 0, sizeof(modem_data));
+						modem_pub_state = DATA;
+						mqtt_publish(mqtt_config.topic_name, mqtt_config.content);
+					}
+					break;
 			}
+		case SEND:
+			{
+				app_uart_get(modem_data);
+				if(modem_data[0] == 'D')
+					{
+						memset(modem_data, 0, sizeof(modem_data));
+						nrf_delay_ms(300);
+						modem_pub_state = ZERO;
+						break;
+					}
+			}
+		}
 }
 
 static void uart_event_handle(app_uart_evt_t * p_event)
@@ -831,7 +851,7 @@ static void uart_event_handle(app_uart_evt_t * p_event)
 	{
 		case APP_UART_DATA_READY:
 		{
-			if(modem_pub_state == CURSOR)
+			if(modem_pub_state == CURSOR  || modem_pub_state == SEND)
 			{
 				app_sched_event_put(NULL, NULL, serial_scheduled_publish);
 				break;
@@ -853,9 +873,10 @@ static void uart_event_handle(app_uart_evt_t * p_event)
 			if(modem_conect_state == WAIT_CONFIRM)
 					{
 						modem_conect_state = CONECT_CHECK;
+						break;
 					}
-			break;
-		}
+				}
+		
 		default:
 			break;
 	}
@@ -914,7 +935,7 @@ void modem_conect(modem_config_t * p_modem_config, mqtt_config_t *	p_mqtt_config
           NULL,
           APP_UART_FLOW_CONTROL_DISABLED,
           false,
-          NRF_UART_BAUDRATE_115200
+          NRF_UART_BAUDRATE_9600
       };
 
     APP_UART_FIFO_INIT(&comm_params,

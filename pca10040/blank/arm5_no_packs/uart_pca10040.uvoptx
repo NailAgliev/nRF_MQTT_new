@@ -150,9 +150,9 @@
         <Bp>
           <Number>0</Number>
           <Type>0</Type>
-          <LineNumber>256</LineNumber>
+          <LineNumber>22</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>8792</Address>
+          <Address>11540</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -161,39 +161,7 @@
           <BreakIfRCount>1</BreakIfRCount>
           <Filename>..\..\..\mqtt.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\nrf52832_xxaa\../../../mqtt.c\256</Expression>
-        </Bp>
-        <Bp>
-          <Number>1</Number>
-          <Type>0</Type>
-          <LineNumber>257</LineNumber>
-          <EnabledFlag>1</EnabledFlag>
-          <Address>0</Address>
-          <ByteObject>0</ByteObject>
-          <HtxType>0</HtxType>
-          <ManyObjects>0</ManyObjects>
-          <SizeOfObject>0</SizeOfObject>
-          <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>0</BreakIfRCount>
-          <Filename>..\..\..\mqtt.c</Filename>
-          <ExecCommand></ExecCommand>
-          <Expression></Expression>
-        </Bp>
-        <Bp>
-          <Number>2</Number>
-          <Type>0</Type>
-          <LineNumber>259</LineNumber>
-          <EnabledFlag>1</EnabledFlag>
-          <Address>0</Address>
-          <ByteObject>0</ByteObject>
-          <HtxType>0</HtxType>
-          <ManyObjects>0</ManyObjects>
-          <SizeOfObject>0</SizeOfObject>
-          <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>0</BreakIfRCount>
-          <Filename>..\..\..\mqtt.c</Filename>
-          <ExecCommand></ExecCommand>
-          <Expression></Expression>
+          <Expression>\\nrf52832_xxaa\../../../mqtt.c\22</Expression>
         </Bp>
       </Breakpoint>
       <WatchWindow1>
@@ -226,6 +194,21 @@
           <count>5</count>
           <WinNumber>1</WinNumber>
           <ItemText>modem_conect_state</ItemText>
+        </Ww>
+        <Ww>
+          <count>6</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>string_p + i</ItemText>
+        </Ww>
+        <Ww>
+          <count>7</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>(uint8_t)*(string_p + i)</ItemText>
+        </Ww>
+        <Ww>
+          <count>8</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>string_p + i</ItemText>
         </Ww>
       </WatchWindow1>
       <Tracepoint>

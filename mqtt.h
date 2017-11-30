@@ -69,6 +69,7 @@ typedef enum{
 	ZERO,
 	CURSOR,
 	DATA,
+	SEND,
 } modem_pub_state_t;
 
 typedef struct{
@@ -93,5 +94,7 @@ void modem_conect(modem_config_t * p_modem_config, mqtt_config_t *	p_mqtt_config
 void mqtt_publish(char *topic_name_p, char *content_p);
 
 modem_conect_state_t modem_conect_state_check();
+
+modem_pub_state_t modem_pub_state_check();
 
 #endif //MQTT_H__
