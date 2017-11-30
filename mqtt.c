@@ -198,7 +198,7 @@ void mqtt_connect(const char *client_id, const char *server_login, const char *s
 			case WAIT_CONFIRM:									                                                                   
 				{									                                                                                   
 					app_uart_flush();									                                                                 
-					at_write("+CIPRXGET=2,4");									                                                       
+					at_write("+CIPRXGET=2,4");	//получаем 4 байта данных								                                                       
 					break;									                                                                           
 				}									                                                                                   
 			case CONECTED:									                                                                       
@@ -417,7 +417,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 			{														                                                                           
 				if(modem_data[0] == ('O')|| modem_data[0] == ('0')|| modem_data[0] == ('A'))												 		
 				{														                                                                         
-					memset(modem_data, 0, sizeof(modem_data));														                             
+					memset(modem_data, 0, sizeof(modem_data));	//чистим модем дата													                             
 					modem_int_state = CFUN;																			                                       
 					modem_init();														                                                           
 					break;														                                                                 
