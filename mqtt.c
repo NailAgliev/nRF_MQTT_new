@@ -5,11 +5,15 @@ static  uint8_t modem_data[128];
 static  uint8_t index = 0;
 
 
-modem_config_t modem_config;
+static	modem_config_t modem_config;
 
-mqtt_config_t mqtt_config;
+	mqtt_config_t mqtt_config;
+
+static	modem_int_state_t modem_int_state;
 	
-	
+static	modem_conect_state_t modem_conect_state;
+
+static	modem_pub_state_t modem_pub_state;
 	
 
 
@@ -52,6 +56,12 @@ static bool cgatt_check()  																																									 // пров
 	return false;					
 							
 }					
+
+modem_conect_state_t modem_conect_state_check()
+{
+	return modem_conect_state;
+}
+
 					
 static void at_write(char second[])         																																 //отправка комад модулю
 {					
@@ -90,7 +100,7 @@ static void at_write_tcp(const char server_address[],const char server_port[])  
 							
 }					
 					
-static void mqtt_connect(const char *client_id, const char *server_login, const char *server_pass)					 // авторизация на сревере 
+void mqtt_connect(const char *client_id, const char *server_login, const char *server_pass)					 // авторизация на сревере 
 {					
 	const uint8_t con_flag					= 0x10;					
 																																									//1 hour					
@@ -190,13 +200,20 @@ static void mqtt_connect(const char *client_id, const char *server_login, const 
 		}					
 }					
 					
-void mqtt_publish(const char *topic_name, const char *content)  																						 //отправка сообщения на сервер
-{					
+void mqtt_publish(char *topic_name_p, char *content_p)  																						 //отправка сообщения на сервер
+{
+	if(modem_conect_state == CONECTED)
+		{
+	
+	mqtt_config.topic_name = topic_name_p;
+			
+	mqtt_config.content = content_p;
+			
 	const uint8_t pub_flag				= 0x31;					
 						
-	uint16_t topic_name_length 		= strlen(topic_name);					
+	uint16_t topic_name_length 		= strlen(topic_name_p);					
 						
-	uint16_t content_length 			= strlen(content);					
+	uint16_t content_length 			= strlen(content_p);					
 						
 	uint8_t package_length      	= (topic_name_length + content_length +4);					
 						
@@ -210,10 +227,10 @@ void mqtt_publish(const char *topic_name, const char *content)  																
 					uint8_t b_lsb;					
 					uint8_t b_msb;					
 		}byte;					
-	}btopicl;					
-	
-	btopicl.length = topic_name_length;
-	
+	}btopicl;			
+
+	btopicl.length = topic_name_length;	
+						
 	union{					
 		uint16_t length;					
 		struct{					
@@ -222,9 +239,8 @@ void mqtt_publish(const char *topic_name, const char *content)  																
 		}byte;					
 	}bcontentl;					
 						
-	bcontentl.length = content_length;
+	bcontentl.length = content_length;					
 	
-						
 	switch (modem_pub_state)					
 		{					
 			case ZERO:					
@@ -236,22 +252,30 @@ void mqtt_publish(const char *topic_name, const char *content)  																
 				}					
 			case DATA:					
 				{					
-					app_uart_put(pub_flag);					
+					app_uart_flush();
+					
+					app_uart_put(pub_flag);	
+
+					modem_conect_state =	CONECT_ERROR;					
 										
 					app_uart_put(package_length);					
 										
 					app_uart_put(btopicl.byte.b_msb);					
 					app_uart_put(btopicl.byte.b_lsb);					
 										
-					printf("%s", topic_name);					
+					printf("%s", *topic_name_p);					
 										
 					app_uart_put(bcontentl.byte.b_msb);					
 					app_uart_put(bcontentl.byte.b_lsb);					
 										
-					printf("%s", content);						
+					printf("%s", *content_p);		
+
+					modem_pub_state = ZERO;
+					break;
 				}					
-		}					
-}					
+		}
+	}
+}
 					
 					
 static void modem_publish()					
@@ -264,7 +288,7 @@ static void modem_publish()
 		}					
 		if(modem_conect_state == CONECTED)					
 		{					
-			mqtt_publish(mqtt_config.topic_name, mqtt_config.content);					
+			//mqtt_publish(mqtt_config.topic_name, mqtt_config.content);					
 		}					
 	}					
 }					
@@ -868,7 +892,7 @@ void modem_conect(modem_config_t * p_modem_config, mqtt_config_t *	p_mqtt_config
 	  mqtt_config.server_login   = p_mqtt_config->server_login;  
 	  mqtt_config.server_pass    =	p_mqtt_config->server_pass;   
 		mqtt_config.topic_name		  = p_mqtt_config->topic_name;		
-	  mqtt_config.content				= p_mqtt_config->content;				
+	 	mqtt_config.content				= p_mqtt_config->content;				
 	
 	
 	

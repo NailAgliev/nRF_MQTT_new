@@ -31,7 +31,7 @@
 
 APP_TIMER_DEF(uart_timer);
 
-static enum {
+typedef enum {
 	AT,
 	CFUN,
 	CFUN_1,
@@ -52,9 +52,9 @@ static enum {
 	CIPSTART,
 	OK, //15
 	ERROR,
-} modem_int_state;
+} modem_int_state_t;
 
-static enum{
+typedef enum{
 	REDY,
 	WAIT_CURSOR,
 	DATA_SEND,
@@ -62,14 +62,14 @@ static enum{
 	CONECT_CHECK,
 	CONECTED,
 	CONECT_ERROR,
-} modem_conect_state;
+} modem_conect_state_t;
 
 
-static enum{
+typedef enum{
 	ZERO,
 	CURSOR,
 	DATA,
-} modem_pub_state;
+} modem_pub_state_t;
 
 typedef struct{
 	char *apn; 					
@@ -83,12 +83,15 @@ typedef struct{
 	char *client_id;     
 	char *server_login;  
 	char *server_pass;   
-	char *topic_name;		
-	char *content;				
+	volatile	char *topic_name;		
+	volatile	char *content;				
 } mqtt_config_t;
 
 
 void modem_conect(modem_config_t * p_modem_config, mqtt_config_t *	p_mqtt_config);
 
+void mqtt_publish(char *topic_name_p, char *content_p);
+
+modem_conect_state_t modem_conect_state_check();
 
 #endif //MQTT_H__

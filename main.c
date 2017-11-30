@@ -81,8 +81,14 @@ mqtt_config_t my_mqtt_config = {
 	.server_login  	= "iviqnyll",
 	.server_pass   	= "TOOXoaHFQ8vi",
 	.topic_name		 	= "init",
-	.content			 	= "stas privet",
+	.content			 	= "stas",
 };
+
+
+char *topic = "temp";
+char *content = "Actual temperature: 10\r\n";
+
+modem_conect_state_t modem_conect_state;
 
 /**
  * @brief Function for main application entry.
@@ -115,8 +121,17 @@ int main(void)
 
         /**@note Workaround for PAN_028 rev2.0A anomaly 30 - TEMP: Temp module analog front end does not power down when DATARDY event occurs. */
         NRF_TEMP->TASKS_STOP = 1; /** Stop the temperature measurement. */
-
-        SEGGER_RTT_printf(0, "Actual temperature: %d\r\n", (int)temp);
+				
+				//SEGGER_RTT_printf(0, "Actual temperature: %d\r\n", (int)temp);
+				
+				sprintf(content, "Actual temperature: %d\r\n", (int)temp);
+				
+				modem_conect_state = modem_conect_state_check();
+				if(modem_conect_state == CONECTED)
+				{
+					mqtt_publish(topic, content);
+					//nrf_delay_ms(500);
+				}
 
     }
 	
