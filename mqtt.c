@@ -1,12 +1,12 @@
 #include "mqtt.h"
 
-static  uint8_t modem_data[128];
-static  uint8_t index = 0;
-static	modem_config_t			  modem_config;                        
-static	mqtt_config_t 			  mqtt_config;
-static	modem_int_state_t		  modem_int_state;
-static	modem_conect_state_t modem_conect_state;
-static	modem_pub_state_t 	 modem_pub_state;
+static  uint8_t 						 modem_data[128]; 		//Строка полученая от модема
+static  uint8_t 						 index = 0; 					//индекс для строки
+static	modem_config_t			 modem_config;    		//локальная структура modem_config 
+static	mqtt_config_t 			 mqtt_config;					//локальная структура mqtt_config	
+static	modem_int_state_t		 modem_int_state;			//состояние инициализации
+static	modem_conect_state_t modem_conect_state;  //состояние подключения
+static	modem_pub_state_t 	 modem_pub_state;			//состояние отправки
 
 
 static void send_string(char *string_p)																																			 //отправка строки
