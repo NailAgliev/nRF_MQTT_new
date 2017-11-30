@@ -99,7 +99,7 @@ int main(void)
 	
 		int32_t volatile temp;
 	
-		int16_t volatile index = 0;
+		int16_t volatile index = 9990;
 	
     nrf_temp_init();
 	
@@ -132,14 +132,16 @@ int main(void)
 				
 				if(modem_conect_state == CONECTED && modem_pub_state == ZERO)
 				{
+
+					sprintf(content, "Actual temperature: %d Index: %d\r\n", (int)temp, (int)index);
+		
+					mqtt_publish(topic, content);
+					
 					index++;
-					if(index >= 10000000)
+					if(index >= 10000)
 					{
 						index = 0;
 					}
-					sprintf(content, "Actual temperature: %d Index: %d\r\n", (int)temp, index);
-				
-					mqtt_publish(topic, content);
 				}
 
     }
