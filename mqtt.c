@@ -198,7 +198,7 @@ void mqtt_connect(const char *client_id, const char *server_login, const char *s
 			case WAIT_CONFIRM:									                                                                   
 				{									                                                                                   
 					app_uart_flush();									                                                                 
-					at_write("+CIPRXGET=2,4");	//получаем 4 байта данных								                                                       
+					at_write("+CIPRXGET=2,4");	//отпровляем для полученя 4 байт данных								                                                       
 					break;									                                                                           
 				}									                                                                                   
 			case CONECTED:									                                                                       
