@@ -57,31 +57,31 @@
 
 #include "app_uart.h"
 #include "app_error.h"
-#include "nrf_delay.h"
 #include "nrf.h"
 #include "bsp.h"
 #include "nrf_uart.h"
 
 #include "mqtt.h"
 
-
+#include "nrf_delay.h"
+#include "nrf_temp.h"
 
 
 
 modem_config_t my_modem_config = {
-	.apn 					= "internet.mts.ru",
-	.user					= "mts",
-	.pass					= "mts",
+	.apn 					 	= "internet.mts.ru",
+	.user					 	= "mts",
+	.pass					 	= "mts",
 };
 
 mqtt_config_t my_mqtt_config = {
-	.server_address= "m20.cloudmqtt.com",
-	.server_port   = "14974",
-	.client_id     = "modem",
-	.server_login  = "iviqnyll",
-	.server_pass   = "TOOXoaHFQ8vi",
-	.topic_name		= "init",
-	.content				= "OK",
+	.server_address	= "m20.cloudmqtt.com",
+	.server_port   	= "14974",
+	.client_id     	= "modem",
+	.server_login  	= "iviqnyll",
+	.server_pass   	= "TOOXoaHFQ8vi",
+	.topic_name		 	= "init",
+	.content			 	= "stas privet",
 };
 
 /**
@@ -89,12 +89,37 @@ mqtt_config_t my_mqtt_config = {
  */
 int main(void)
 {
+	
+		int32_t volatile temp;
+
+    nrf_temp_init();
+	
 		modem_conect(&my_modem_config, &my_mqtt_config);
-			
-		while (true)
+
+    while (true)
     {
-			app_sched_execute();
+			  app_sched_execute();
+
+        NRF_TEMP->TASKS_START = 1; /** Start the temperature measurement. */
+
+        /* Busy wait while temperature measurement is not finished, you can skip waiting if you enable interrupt for DATARDY event and read the result in the interrupt. */
+        /*lint -e{845} // A zero has been given as right argument to operator '|'" */
+        while (NRF_TEMP->EVENTS_DATARDY == 0)
+        {
+					app_sched_execute();
+        }
+        NRF_TEMP->EVENTS_DATARDY = 0;
+
+        /**@note Workaround for PAN_028 rev2.0A anomaly 29 - TEMP: Stop task clears the TEMP register. */
+        temp = (nrf_temp_read() / 4);
+
+        /**@note Workaround for PAN_028 rev2.0A anomaly 30 - TEMP: Temp module analog front end does not power down when DATARDY event occurs. */
+        NRF_TEMP->TASKS_STOP = 1; /** Stop the temperature measurement. */
+
+        SEGGER_RTT_printf(0, "Actual temperature: %d\r\n", (int)temp);
+
     }
+	
 }
 
 /** @} */

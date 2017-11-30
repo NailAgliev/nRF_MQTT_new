@@ -211,7 +211,9 @@ void mqtt_publish(const char *topic_name, const char *content)  																
 					uint8_t b_msb;					
 		}byte;					
 	}btopicl;					
-						
+	
+	btopicl.length = topic_name_length;
+	
 	union{					
 		uint16_t length;					
 		struct{					
@@ -220,7 +222,8 @@ void mqtt_publish(const char *topic_name, const char *content)  																
 		}byte;					
 	}bcontentl;					
 						
-	btopicl.length = topic_name_length;					
+	bcontentl.length = content_length;
+	
 						
 	switch (modem_pub_state)					
 		{					
