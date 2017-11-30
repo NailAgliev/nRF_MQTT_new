@@ -173,7 +173,7 @@ void mqtt_connect(const char *client_id, const char *server_login, const char *s
 														                                                                                 
 					app_uart_put(package_length);									                                                     
 														                                                                                 
-					for(uint8_t i = 0; i != sizeof(con_fix_heder); i++)									                               
+					for(uint8_t i = 0; i < sizeof(con_fix_heder); i++)									                               
 					{									                                                                                 
 						app_uart_put(con_fix_heder[i]);									                                                 
 					}									                                                                                 
@@ -216,7 +216,7 @@ void mqtt_publish(char *topic_name_p, char *content_p)//отправка соо�
 	mqtt_config.topic_name 				= topic_name_p;		
 	mqtt_config.content 					= content_p;		
 			
-	const uint8_t pub_flag				= 0x31;										
+	const uint8_t pub_flag				= 0x31;	//с ретейном 31 без ретэйна 30						
 	uint16_t topic_name_length 		= strlen(topic_name_p);								
 	uint16_t content_length 			= strlen(content_p);								
 	uint8_t package_length      	= (topic_name_length + content_length +4);	
