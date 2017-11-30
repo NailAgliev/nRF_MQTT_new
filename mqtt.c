@@ -26,12 +26,14 @@ static void scheduler_init(void)
 
 static bool modem_s_q_check()//проверка силы сигнала
 {					
-	uint8_t comma 		=	0;					
+	uint8_t comma 		=	0;					 //индекс члена масива содержащего запятую
 	while(modem_data[comma] != 0x2C) //ищем запятую в массиве		
 	{					
 		comma++;					
-	}					
-	if(comma > 7)	//если перед заяпятой число больше 10 то запятая будет на восьмой позиции если меньше то на седьмой					
+	}		
+	//если перед заяпятой число больше 10 то запятая будет на восьмой позиции если меньше то на седьмой	
+  //получаем +CSQ: 18,0
+	if(comma > 7)	
 	{					
 		return true;					
 	}					
@@ -40,7 +42,8 @@ static bool modem_s_q_check()//проверка силы сигнала
 					
 static bool modem_reg_chck()//проверка регистрации в сети
 {					
-	if(modem_data[9] == '1')					
+																
+	if(modem_data[9] == '1')	//получаем +CREG: 0,1		
 	{					
 		return true;					
 	}					
