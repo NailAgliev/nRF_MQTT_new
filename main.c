@@ -94,7 +94,7 @@ int main(void)
 {
 		modem_conect(&my_modem_config, &my_mqtt_config);
 			
-		//mqtt_publish(topic, content);
+		mqtt_publish(topic, content);
 	
 		while (true)
     {
