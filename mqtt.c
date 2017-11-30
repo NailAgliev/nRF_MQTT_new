@@ -827,7 +827,7 @@ static void serial_scheduled_publish (void * p_event_data, uint16_t event_size)/
 				if(modem_data[0] == 'D')
 					{
 						memset(modem_data, 0, sizeof(modem_data));
-						nrf_delay_ms(300);
+						nrf_delay_ms(3000);
 						modem_pub_state = ZERO;
 						break;
 					}
