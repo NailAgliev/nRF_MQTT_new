@@ -55,7 +55,7 @@ typedef enum {
 } modem_int_state_t;
 
 typedef enum{
-	READY,
+	UNCONECTED,
 	WAIT_CURSOR,
 	DATA_SEND,
 	WAIT_CONFIRM,

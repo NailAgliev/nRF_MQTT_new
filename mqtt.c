@@ -9,7 +9,7 @@ static	modem_conect_state_t modem_conect_state;
 static	modem_pub_state_t 	 modem_pub_state;
 
 
-static void send_string(char *string_p)
+static void send_string(char *string_p)																																			 //отправка строки
 {
 	for(uint8_t i = 0; i < strlen(string_p); i++)
 	{
@@ -38,7 +38,7 @@ static bool modem_s_q_check() 																																							 //пров
 	return false;					
 }					
 					
-static bool modem_reg_chck() 																																								 // проверка регестрации в сети
+static bool modem_reg_chck() 																																								 //проверка регистрации в сети
 {					
 	if(modem_data[9] == '1')					
 	{					
@@ -47,7 +47,7 @@ static bool modem_reg_chck() 																																								 // про�
 	return false;					
 }					
 					
-static bool cgatt_check()  																																									 // проверка доступности GPRS
+static bool cgatt_check()  																																									 //проверка доступности GPRS
 {					
 	if(modem_data[8] == '1')					
 	{					
@@ -57,18 +57,18 @@ static bool cgatt_check()  																																									 // пров
 							
 }					
 
-modem_conect_state_t modem_conect_state_check()
+modem_conect_state_t modem_conect_state_check()																															 //проверка состояния подключения
 {
 	return modem_conect_state;
 }
 
-modem_pub_state_t modem_pub_state_check()
+modem_pub_state_t modem_pub_state_check()																																		 //проверка состояния отправки
 {
 	return modem_pub_state;
 }
 
 					
-static void at_write(char second[])         																																 //отправка комад модулю
+static void at_write(char second[])         																																 //отправка команд модулю
 {					
 		const char *first  = "AT";					
     const char *third	 = "\r\n";					
@@ -105,7 +105,7 @@ static void at_write_tcp(const char server_address[],const char server_port[])  
 							
 }					
 					
-void mqtt_connect(const char *client_id, const char *server_login, const char *server_pass)					 				 // авторизация на сревере 
+void mqtt_connect(const char *client_id, const char *server_login, const char *server_pass)					 				 //авторизация на сревере 
 {									                                                                                           
 	const uint8_t con_flag					= 0x10;									                                                   
 																																									//1 hour									 
@@ -155,7 +155,7 @@ void mqtt_connect(const char *client_id, const char *server_login, const char *s
 											                                                                                       
 	switch (modem_conect_state)									                                                               
 		{									                                                                                       
-			case READY:									                                                                           
+			case UNCONECTED:									                                                                           
 				{									                                                                                   
 					app_uart_flush();									                                                                 
 					printf("%s%d%s", start, package_length+2, end);									                                   
@@ -210,21 +210,16 @@ void mqtt_publish(char *topic_name_p, char *content_p)  																						 	
 	if(modem_conect_state == CONECTED)
 		{
 	
-	mqtt_config.topic_name = topic_name_p;
+	mqtt_config.topic_name 				= topic_name_p;		
+	mqtt_config.content 					= content_p;		
 			
-	mqtt_config.content = content_p;
+	const uint8_t pub_flag				= 0x31;										
+	uint16_t topic_name_length 		= strlen(topic_name_p);								
+	uint16_t content_length 			= strlen(content_p);								
+	uint8_t package_length      	= (topic_name_length + content_length +4);	
 			
-	const uint8_t pub_flag				= 0x31;					
-						
-	uint16_t topic_name_length 		= strlen(topic_name_p);					
-						
-	uint16_t content_length 			= strlen(content_p);					
-						
-	uint8_t package_length      	= (topic_name_length + content_length +4);					
-						
-	const char *start  = "AT+CIPSEND=";					
-						
-  const char *end	 = "\r\n";						
+	const char *start  						= "AT+CIPSEND=";							
+  const char *end	 							= "\r\n";						
 						
 	union{					
 		uint16_t length;					
@@ -233,7 +228,6 @@ void mqtt_publish(char *topic_name_p, char *content_p)  																						 	
 					uint8_t b_msb;					
 		}byte;					
 	}btopicl;			
-
 	btopicl.length = topic_name_length;	
 						
 	union{					
@@ -242,20 +236,19 @@ void mqtt_publish(char *topic_name_p, char *content_p)  																						 	
 					uint8_t b_lsb;					
 					uint8_t b_msb;					
 		}byte;					
-	}bcontentl;					
-						
+	}bcontentl;						
 	bcontentl.length = content_length;					
 	
 	switch (modem_pub_state)					
 		{					
-			case ZERO:					
+		case ZERO:																																															 //начало отправки
 				{					
 					app_uart_flush();					
 					printf("%s%d%s", start, package_length+2, end);				
 					modem_pub_state = CURSOR;					
 					break;					
 				}					
-			case DATA:					
+		case DATA:																																															 //после получения корсора отправка пакета 
 				{					
 					app_uart_flush();
 					
@@ -281,15 +274,15 @@ void mqtt_publish(char *topic_name_p, char *content_p)  																						 	
 }
 					
 					
-static void modem_publish()					
+static void modem_publish()																																									 //проверка подключения отправка подтверждения подключения
 {					
 	if(modem_int_state == OK)					
 	{					
-		if(modem_conect_state == READY)					
+		if(modem_conect_state == UNCONECTED)																																			
 		{					
 			mqtt_connect(mqtt_config.client_id, mqtt_config.server_login, mqtt_config.server_pass);					
 		}					
-		if(modem_conect_state == CONECTED)					
+		if(modem_conect_state == CONECTED)																																				
 		{					
 			mqtt_publish(mqtt_config.topic_name, mqtt_config.content);					
 		}					
@@ -297,67 +290,67 @@ static void modem_publish()
 }					
 					
 					
-static void modem_init()					
+static void modem_init()																																										 //Инициализация и подключение к серверу
 {					
 						
 	switch(modem_int_state)					
 	{					
-		case AT:  									 																																						//Проверка доступен ли модуль					
-			{																		
-				app_uart_flush();														
-				at_write("");														
-				app_timer_start(uart_timer, APP_TIMER_TICKS(1000), NULL);														
-				break;														
-			}														
-		case CFUN:														
-			{														
-				app_uart_flush();														
-				at_write("+CFUN=0");														
-				break;														
-			}														
-		case CFUN_1: 								 																																						//Рестарт модуля					
-			{																
-				app_uart_flush();														
-				at_write("+CFUN=1,1");														
-				break;														
-			}														
-		case ATE:																																																//No echo mode					
-			{														
-				app_uart_flush();														
-				at_write("E0");														
-				break;														
-			}														
-		case ATV:																														 																		//Числовой формат ответов					
-			{														
-				app_uart_flush();														
-				at_write("V0");														
-				break;														
-			}														
+		case AT:  									 																																						 //Проверка доступен ли модуль					
+			{																		                                                                   
+				app_uart_flush();														                                                         
+				at_write("");														                                                             
+				app_timer_start(uart_timer, APP_TIMER_TICKS(1000), NULL);														                 
+				break;														                                                                   
+			}														                                                                           
+		case CFUN:														                                                                   
+			{														                                                                           
+				app_uart_flush();														                                                         
+				at_write("+CFUN=0");														                                                     
+				break;														                                                                   
+			}														                                                                           
+		case CFUN_1: 								 																																						 //Рестарт модуля					
+			{																                                                                       
+				app_uart_flush();														                                                         
+				at_write("+CFUN=1,1");														                                                   
+				break;														                                                                   
+			}														                                                                           
+		case ATE:																																																 //No echo mode					
+			{														                                                                           
+				app_uart_flush();														                                                         
+				at_write("E0");														                                                           
+				break;														                                                                   
+			}														                                                                           
+		case ATV:																														 																		 //Числовой формат ответов					
+			{														                                                                           
+				app_uart_flush();														                                                         
+				at_write("V0");														                                                           
+				break;														                                                                   
+			}														                                                                           
 		case CMEE:  																																														 //Кодовый формат ошибок					
-			{														
-				app_uart_flush();														
-				at_write("+CMEE=1");														
-				break;														
-			}														
-		case CPIN_CHECK:																				
-			{														
-				app_uart_flush();														
-				at_write("+CPIN=?");														
-				break;														
-			}															
-		case CSQ_CHECK: 																																												//Проверка силы сигнала					
-			{														
-				app_uart_flush();														
-				at_write("+CSQ");														
-				break;														
-			}														
-		case CREG_CHECK:																																												//Проверка рекгестрации в сети					
-			{														
-				app_uart_flush();														
-				at_write("+CREG?");														
-				break;														
-			}														
-		case CIPSHUT:																																														//TCP restart					
+			{														                                                                           
+				app_uart_flush();														                                                         
+				at_write("+CMEE=1");														                                                     
+				break;														                                                                   
+			}														                                                                           
+		case CPIN_CHECK:																																											   //Проверка PIN
+			{														                                                                           
+				app_uart_flush();														                                                         
+				at_write("+CPIN=?");														                                                     
+				break;														                                                                   
+			}															                                                                         
+		case CSQ_CHECK: 																																												 //Проверка силы сигнала					
+			{														                                                                           
+				app_uart_flush();														                                                         
+				at_write("+CSQ");														                                                         
+				break;														                                                                   
+			}														                                                                           
+		case CREG_CHECK:																																												 //Проверка рекгестрации в сети					
+			{														                                                                           
+				app_uart_flush();														                                                         
+				at_write("+CREG?");														                                                       
+				break;														                                                                   
+			}														                                                                           
+		case CIPSHUT:																																														 //TCP restart					
 			{																																		
 				app_uart_flush();																																		
 				at_write("+CIPSHUT");																																		
@@ -369,37 +362,37 @@ static void modem_init()
 				at_write("+CGATT?");																																		
 				break;																																		
 			}																																		
-		case CIPRXGET:																																													//Ручное получение полученных сообщений					
-			{														
-				app_uart_flush();														
-				at_write("+CIPRXGET=1");														
-				break;														
-			}														
-		case CIPQSEND:																																													//Режим отправки без потверждения получения							
-			{														
-				app_uart_flush();														
-				at_write("+CIPQSEND=1");														
-				break;														
-			}														
-		case CSTT:																																															//Конфигурация APN					
-			{														
-				app_uart_flush();														
-				at_write_apn(modem_config.apn, modem_config.user, modem_config.pass);														
-				break;														
-			}														
-		case CIICR:																																															//Влючение GPRS					
-			{					
-				app_uart_flush();					
-				at_write("+CIICR");					
-				break;					
-			}					
-		case CIFSR:					
+		case CIPRXGET:																																													 //Ручное получение полученных сообщений					
+			{														                                                                           
+				app_uart_flush();														                                                         
+				at_write("+CIPRXGET=1");														                                                 
+				break;														                                                                   
+			}														                                                                           
+		case CIPQSEND:																																													 //Режим отправки без потверждения получения							
+			{														                                                                           
+				app_uart_flush();														                                                         
+				at_write("+CIPQSEND=1");														                                                 
+				break;														                                                                   
+			}														                                                                           
+		case CSTT:																																															 //Конфигурация APN					
+			{														                                                                           
+				app_uart_flush();														                                                         
+				at_write_apn(modem_config.apn, modem_config.user, modem_config.pass);														     
+				break;														                                                                   
+			}														                                                                           
+		case CIICR:																																															 //Влючение GPRS					
+			{					                                                                                             
+				app_uart_flush();					                                                                           
+				at_write("+CIICR");					                                                                         
+				break;					                                                                                     
+			}					                                                                                             
+		case CIFSR:																																															 //Получение присвоеного IP
 			{					
 				app_uart_flush();					
 				at_write("+CIFSR");					
 				break;					
 			}					
-		case CIPSTART:					
+		case CIPSTART:																																													 //Подключение к серверу
 			{					
 				app_uart_flush();					
 				at_write_tcp(mqtt_config.server_address, mqtt_config.server_port);					
@@ -411,7 +404,7 @@ static void modem_init()
 }					
 					
 					
-static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)    								  						 //работает по прирыванию
+static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)    								  						 //работает по прерыванию
 {					                                                                                                   
 	if(modem_int_state < OK)					                                                                         
 	{					                                                                                                 
@@ -762,11 +755,11 @@ static void rx_red_confirm()																																								 //пров�
 }
 
 
-static void serial_scheduled_conect (void * p_event_data, uint16_t event_size) 															 
+static void serial_scheduled_conect (void * p_event_data, uint16_t event_size) 															 //хендлер прерыванию юарт во время подключения
 {
 	switch (modem_conect_state)
 		{
-		case WAIT_CURSOR:                       
+		case WAIT_CURSOR:                      																																 	 //ждем курсор
 				{
 					app_uart_get(modem_data);
 					if(modem_data[0] == '>')
@@ -777,7 +770,7 @@ static void serial_scheduled_conect (void * p_event_data, uint16_t event_size)
 						}
 						break;
 				}
-			case DATA_SEND:       
+			case DATA_SEND:       																																								 //ждем DATA ACCEPT
 				{
 					app_uart_get(modem_data);
 					if(modem_data[0] == 'D')
@@ -787,7 +780,7 @@ static void serial_scheduled_conect (void * p_event_data, uint16_t event_size)
 						}
 						break;
 				}
-			case WAIT_CONFIRM:
+			case WAIT_CONFIRM:																																										 //ждем ответа от сервера
 				{
 					app_uart_get(modem_data);
 					if(modem_data[0] == '+')
@@ -801,7 +794,7 @@ static void serial_scheduled_conect (void * p_event_data, uint16_t event_size)
 						}
 						break;
 				}
-			case CONECT_CHECK:
+			case CONECT_CHECK:																																										 //обробатываем ответ
 				{
 					rx_red_confirm();
 					break;
@@ -810,11 +803,11 @@ static void serial_scheduled_conect (void * p_event_data, uint16_t event_size)
 		}
 }
 
-static void serial_scheduled_publish (void * p_event_data, uint16_t event_size)
+static void serial_scheduled_publish (void * p_event_data, uint16_t event_size)															 //хендлер прерыванию юарт во время отправки
 {
 	switch (modem_pub_state)
 		{
-		case CURSOR:
+		case CURSOR:																																														 //ждем курсор
 			{
 				app_uart_get(modem_data);
 				if(modem_data[0] == '>')
@@ -825,7 +818,7 @@ static void serial_scheduled_publish (void * p_event_data, uint16_t event_size)
 					}
 					break;
 			}
-		case SEND:
+		case SEND:																																															 //ждем подтверждения отправки
 			{
 				app_uart_get(modem_data);
 				if(modem_data[0] == 'D')
@@ -845,17 +838,17 @@ static void uart_event_handle(app_uart_evt_t * p_event)
 	{
 		case APP_UART_DATA_READY:
 		{
-			if(modem_pub_state == CURSOR  || modem_pub_state == SEND)
+			if(modem_pub_state == CURSOR  || modem_pub_state == SEND)																							 //при отправке
 			{
 				app_sched_event_put(NULL, NULL, serial_scheduled_publish);
 				break;
 			}
-			if(modem_conect_state != READY  && modem_conect_state != CONECTED)
+			if(modem_conect_state != UNCONECTED  && modem_conect_state != CONECTED)																 //при подключении
 			{
 				app_sched_event_put(NULL, NULL, serial_scheduled_conect);
 				break;
 			}
-			if(modem_int_state == AT)
+			if(modem_int_state == AT)																																							 //во время ожидания ответа от модема
 			{
 				app_timer_stop_all();
 				app_sched_event_put(NULL, NULL, serial_scheduled_ex);				
@@ -864,7 +857,7 @@ static void uart_event_handle(app_uart_evt_t * p_event)
 		}
 		case APP_UART_TX_EMPTY:
 		{
-			if(modem_conect_state == WAIT_CONFIRM)
+			if(modem_conect_state == WAIT_CONFIRM)																																 //ждем ответ от сервера
 					{
 						modem_conect_state = CONECT_CHECK;
 						break;

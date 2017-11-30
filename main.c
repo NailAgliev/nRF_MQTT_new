@@ -86,10 +86,10 @@ mqtt_config_t my_mqtt_config = {    //структура подключения 
 
 
 char *topic = "temp"; //название топика температуры
-char content[80]; 
+char content[80];		 	//строка для отправки
 
-modem_conect_state_t modem_conect_state;
-modem_pub_state_t modem_pub_state;
+modem_conect_state_t  modem_conect_state; //состояние подключения
+modem_pub_state_t 		modem_pub_state;		//состояние отправки
 
 /**
  * @brief Function for main application entry.
@@ -101,11 +101,11 @@ int main(void)
 
     nrf_temp_init();
 	
-		modem_conect(&my_modem_config, &my_mqtt_config);
+		modem_conect(&my_modem_config, &my_mqtt_config);  //инициализация модема и подключение к серверу
 
     while (true)
     {
-			  app_sched_execute();
+				app_sched_execute();		//выполнение отложеных ивентов
 
         NRF_TEMP->TASKS_START = 1; /** Start the temperature measurement. */
 
@@ -123,19 +123,14 @@ int main(void)
         /**@note Workaround for PAN_028 rev2.0A anomaly 30 - TEMP: Temp module analog front end does not power down when DATARDY event occurs. */
         NRF_TEMP->TASKS_STOP = 1; /** Stop the temperature measurement. */
 				
-				//SEGGER_RTT_printf(0, "Actual temperature: %d\r\n", (int)temp);
-				
 				sprintf(content, "Actual temperature: %d\r\n", (int)temp);
-				
-				//SEGGER_RTT_printf(0, "%s", content);
-				
-				modem_conect_state = modem_conect_state_check();
-				modem_pub_state = modem_pub_state_check();
+
+				modem_conect_state =  modem_conect_state_check(); //получение состояния подключения
+				modem_pub_state 	 =	modem_pub_state_check();		//получение состояния отправки
 				
 				if(modem_conect_state == CONECTED && modem_pub_state == ZERO)
 				{
 					mqtt_publish(topic, content);
-					//nrf_delay_ms(500);
 				}
 
     }
