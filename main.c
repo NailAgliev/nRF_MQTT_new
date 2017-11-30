@@ -86,7 +86,7 @@ mqtt_config_t my_mqtt_config = {    //структура подключения 
 
 
 char *topic = "temp"; //название топика температуры
-char content[100];		 	//строка для отправки
+char content[120];		 	//строка для отправки
 
 modem_conect_state_t  modem_conect_state; //состояние подключения
 modem_pub_state_t 		modem_pub_state;		//состояние отправки
@@ -99,8 +99,8 @@ int main(void)
 	
 		int32_t volatile temp;
 	
-		uint32_t index = 0;
-
+		int16_t volatile index = 0;
+	
     nrf_temp_init();
 	
 		modem_conect(&my_modem_config, &my_mqtt_config);  //инициализация модема и подключение к серверу
@@ -123,9 +123,9 @@ int main(void)
         temp = (nrf_temp_read() / 4);
 
         /**@note Workaround for PAN_028 rev2.0A anomaly 30 - TEMP: Temp module analog front end does not power down when DATARDY event occurs. */
-        NRF_TEMP->TASKS_STOP = 1; /** Stop the temperature measurement. */
+        NRF_TEMP->TASKS_STOP = 1; /** Stop the temperature measurement. */	
 				
-				sprintf(content, "Actual temperature: %d Index: %d\r\n", (int)temp, index);
+							
 
 				modem_conect_state =  modem_conect_state_check(); //получение состояния подключения
 				modem_pub_state 	 =	modem_pub_state_check();		//получение состояния отправки
@@ -133,6 +133,12 @@ int main(void)
 				if(modem_conect_state == CONECTED && modem_pub_state == ZERO)
 				{
 					index++;
+					if(index >= 10000000)
+					{
+						index = 0;
+					}
+					sprintf(content, "Actual temperature: %d Index: %d\r\n", (int)temp, index);
+				
 					mqtt_publish(topic, content);
 				}
 
