@@ -43,7 +43,7 @@ static bool modem_s_q_check()//проверка силы сигнала
 static bool modem_reg_chck()//проверка регистрации в сети
 {					
 																
-	if(modem_data[9] == '1')	//получаем +CREG: 0,1		
+	if(modem_data[9] == '1')	//получаем +CREG: 0,1		еденица значит что модем в сети зарегестрирован
 	{					
 		return true;					
 	}					
@@ -111,7 +111,7 @@ static void at_write_tcp(const char server_address[],const char server_port[])//
 void mqtt_connect(const char *client_id, const char *server_login, const char *server_pass)//авторизация на сревере 
 {									                                                                                           
 	const uint8_t con_flag					= 0x10;									                                                   
-																																									//1 hour									 
+	//все члены масивы стандарстные последние два бита отвечают за длительност подключения в секундах сейчас стоит	1 hour									 
 	const uint8_t con_fix_heder[10] = {0x00, 0x04, 'M', 'Q', 'T', 'T', 0x04, 0xC2, 0x8C, 0xA0};								 	
 										                                                                                         
 	uint16_t client_id_length 			= strlen(client_id);									                                     
@@ -119,10 +119,10 @@ void mqtt_connect(const char *client_id, const char *server_login, const char *s
 	uint16_t server_login_length 		= strlen(server_login);									                                   
 													                                                                                   
 	uint16_t server_pass_length  		= strlen(server_pass);									                                   
-													                                                                                   
-	uint8_t package_length      		= (client_id_length + server_login_length + server_pass_length + 16	);
+	//стандартные служебные байты не меняются всегда 16
+	uint8_t package_length      		= (client_id_length + server_login_length + server_pass_length + 16	); 
 										                                                                                         
-	const char *start  = "AT+CIPSEND=";									                                                       
+	const char *start  = "AT+CIPSEND=";		//ат команда отправки	через сим на сервер						                                                       
 										                                                                                         
   const char *end	 = "\r\n";										                                                             
 										                                                                                         
@@ -413,7 +413,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 	{					                                                                                                 
 		switch(modem_int_state)					                                                                         
 	{					                                                                                                 
-		case AT:  																																															 //Проверка доступен ли модуль
+		case AT:	//Проверка доступен ли модуль
 			{														                                                                           
 				if(modem_data[0] == ('O')|| modem_data[0] == ('0')|| modem_data[0] == ('A'))												 		
 				{														                                                                         
@@ -429,7 +429,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 					break;														                                                                 
 				}														                                                                         
 			}														                                                                           
-		case CFUN:														                                                                   
+		case CFUN:
 			{														                                                                           
 				if(modem_data[0] == ('O')|| modem_data[0] == ('0'))														                       
 				{														                                                                         
@@ -444,7 +444,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 					break;														                                                                 
 				}														                                                                         
 			}														                                                                           
-		case CFUN_1: 								 																																						 //Рестарт модуля
+		case CFUN_1: 		//Рестарт модуля
 			{														                                                                           
 				if(modem_data[0] == ('O')|| modem_data[0] == ('+')|| modem_data[0] == ('0'))												 		
 				{														                                                                         
@@ -460,7 +460,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 					break;														                                                                 
 				}														                                                                         
 			}														                                                                           
-		case CPIN_CHECK:																																												 //Проверка пин кода
+		case CPIN_CHECK:		//Проверка пин кода
 			{														                                                                           
 				if(modem_data[0] == '0')														                                                 
 				{														                                                                         
@@ -476,7 +476,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 					break;														                                                                 
 				}														                                                                         
 			}														                                                                           
-		case ATE:																																																 //No echo mode
+		case ATE:		//No echo mode
 			{														                                                                           
 				if(modem_data[0] == ('O')|| modem_data[0] == ('0') || modem_data[0] == ('A')									)			 		
 				{														                                                                         
@@ -491,7 +491,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 					break;														                                                                 
 				}														                                                                         
 			}														                                                                           
-		case ATV:																																																 //Числовой формат ответов
+		case ATV:	//Числовой формат ответов
 			{														                                                                           
 				if(modem_data[0] == ('0'))														                                               
 				{														                                                                         
@@ -506,7 +506,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 					break;														                                                                 
 				}														                                                                         
 			}														                                                                           
-		case CMEE:  																																													 	 //Кодовый формат ошибок
+		case CMEE:  //Кодовый формат ошибок
 			{														                                                                           
 				if(modem_data[0] == '0')														                                                 
 				{														                                                                         
@@ -521,7 +521,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 					break;														                                                                 
 				}														                                                                         
 			}														                                                                           
-		case CSQ_CHECK: 																																												 //Проверка силы сигнала
+		case CSQ_CHECK: 	//Проверка силы сигнала
 			{														                                                                           
 				if(modem_data[0] == '+')														                                                 
 				{														                                                                         
@@ -546,7 +546,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 					break;														                                                                 
 				}														                                                                         
 			}														                                                                           
-		case CREG_CHECK:																																												 //Проверка рекгестрации в сети
+		case CREG_CHECK:	//Проверка рекгестрации в сети
 			{														                                                                           
 				if(modem_data[0] == '+')														                                                 
 				{														                                                                         
@@ -570,7 +570,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 					break;														                                                                 
 				}														                                                                         
 			}														                                                                           
-		case CIPSHUT:																																														 //TCP restart
+		case CIPSHUT:		//TCP restart
 			{														                                                                           
 				if(modem_data[0] == 'S')														                                                 
 				{														                                                                         
@@ -585,7 +585,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 					break;														                                                                 
 				}														                                                                         
 			}														                                                                           
-		case CGATT_CHECK:           																																						 //проверка готовности модуля для установления связи
+		case CGATT_CHECK:   //проверка готовности модуля для установления связи
 			{														                                                                           
 				if(modem_data[0] == '+')														                                                 
 				{														                                                                         
@@ -624,7 +624,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 					break;														                                                                 
 				}														                                                                         
 			}														                                                                           
-		case CIPRXGET:																																													 //Ручное получение полученных сообщений
+		case CIPRXGET:		//Ручное получение полученных сообщений
 			{														                                                                           
 				if(modem_data[0] == ('0'))														                                               
 				{														                                                                         
@@ -639,7 +639,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 					break;														                                                                 
 				}														                                                                         
 			}														                                                                           
-		case CIPQSEND:																																													 //Режим отправки без потверждения получения		
+		case CIPQSEND:	//Режим отправки без потверждения получения		
 			{																	                                                                     
 				if(modem_data[0] == ('0'))																	                                         
 				{																	                                                                   
@@ -654,7 +654,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 					break;																	                                                           
 				}																	                                                                   
 			}																	                                                                     
-		case CSTT:																																															 //Конфигурация APN
+		case CSTT:		//Конфигурация APN
 			{														                                                                           
 				if(modem_data[0] == ('0'))														                                               
 				{														                                                                         
@@ -669,7 +669,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 					break;														                                                                 
 				}														                                                                         
 			}														                                                                           
-		case CIICR:																																															 //Влючение GPRS
+		case CIICR:		//Влючение GPRS
 			{														                                                                           
 					if(modem_data[0] == ('0'))														                                             
 				{														                                                                         
@@ -684,7 +684,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 					break;														                                                                 
 				}														                                                                         
 			}														                                                                           
-		case CIFSR:																																															 //Получение IP адреса (мы его никуда не принимаем и не записываемся нужен для подключения)
+		case CIFSR:	//Получение IP адреса (мы его никуда не принимаем и не записываемся нужен для подключения)
 			{														                                                                           
 					if(strlen(modem_data) > 6)														                                             
 				{														                                                                         
@@ -699,7 +699,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 					break;														                                                                 
 				}														                                                                         
 			}														                                                                           
-		case CIPSTART:																																													 //Подключение к серверу
+		case CIPSTART:	//Подключение к серверу
 			{					                                                                                             
 					if(modem_data[0] == ('C'))					                                                               
 				{					                                                                                           
