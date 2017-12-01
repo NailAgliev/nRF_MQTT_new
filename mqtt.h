@@ -93,6 +93,8 @@ modem_conect_state_t modem_conect_state_check(void);
 
 modem_pub_state_t modem_pub_state_check(void);
 
+uint8_t	restarts_check(void);
+
 void modem_conect(modem_config_t * p_modem_config, mqtt_config_t *	p_mqtt_config, const app_timer_id_t * p_timer_id);
 
 void mqtt_publish(char *topic_name_p, char *content_p);

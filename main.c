@@ -102,6 +102,8 @@ int main(void)
 		int16_t volatile index = 0;
 	
     nrf_temp_init();
+		
+		uint8_t	restarts = 0;
 	
 		modem_conect(&my_modem_config, &my_mqtt_config, &modem_timer);  //инициализация модема и подключение к серверу
 
@@ -129,11 +131,11 @@ int main(void)
 
 				modem_conect_state =  modem_conect_state_check(); //получение состояния подключения
 				modem_pub_state 	 =	modem_pub_state_check();		//получение состояния отправки
-				
+				restarts           = 	restarts_check();
 				if(modem_conect_state == CONECTED && modem_pub_state == ZERO)
 				{
 
-					sprintf(content, "Actual temperature: %d Index: %d\r\n", (int)temp, (int)index);
+					sprintf(content, "Actual temperature: %d Index: %d Was restarted %d times\r\n", (int)temp, (int)index, (int)restarts);
 		
 					mqtt_publish(topic, content);
 					

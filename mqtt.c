@@ -9,7 +9,7 @@ static	modem_conect_state_t modem_conect_state;  //состояние подкл
 static	modem_pub_state_t 	 modem_pub_state;			//состояние отправки
 
 static 	uint8_t						 	 timer_flag;
-
+static 	uint8_t	restarts = 0;
 app_timer_id_t timer_id;
 
 static void send_string(char *string_p)																																			 //отправка строки
@@ -77,7 +77,10 @@ modem_pub_state_t modem_pub_state_check()//проверка состояния �
 {
 	return modem_pub_state;
 }
-
+uint8_t	restarts_check()
+{
+	return restarts;
+}
 					
 static void at_write(char second[])//отправка команд модулю
 {					
@@ -251,7 +254,8 @@ void mqtt_publish(char *topic_name_p, char *content_p)//отправка соо�
 		{					
 		case ZERO:																																															 //начало отправки
 				{					
-					app_uart_flush();					
+					app_uart_flush();
+					timer_flag = 0;
 					sprintf(string, "%s%d%s", start, package_length+2, end);	
 					send_string(string);
 					modem_pub_state = CURSOR;					
@@ -558,8 +562,12 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 					}														                                                                       
 					else														                                                                   
 					{														                                                                       
-						SEGGER_RTT_printf(0, "Low signal ERROR");														                                           
-						modem_int_state = ERROR;														                                             
+						SEGGER_RTT_printf(0, "Low signal ERROR");
+						app_timer_stop_all();
+						timer_flag = 0;						
+						memset(modem_data, 0, sizeof(modem_data));
+						app_timer_start(timer_id, APP_TIMER_TICKS(1000), NULL);														                                           
+						//modem_int_state = ERROR;														                                             
 						break;														                                                               
 					}														                                                                       
 				}														                                                                         
@@ -865,6 +873,8 @@ static void serial_scheduled_publish (void * p_event_data, uint16_t event_size)/
 				app_uart_get(modem_data);
 				if(modem_data[0] == '>')
 					{
+						app_timer_stop_all();
+						timer_flag = 0;					
 						memset(modem_data, 0, sizeof(modem_data));
 						modem_pub_state = DATA;
 						mqtt_publish(mqtt_config.topic_name, mqtt_config.content);
@@ -872,11 +882,14 @@ static void serial_scheduled_publish (void * p_event_data, uint16_t event_size)/
 					}
 					else if(modem_data[0] == '+')
 					{
+						app_timer_stop_all();
+						timer_flag = 0;					
 						memset(modem_data, 0, sizeof(modem_data));
 						modem_pub_state = ZERO;
 						modem_conect_state = UNCONECTED;
 						modem_int_state = AT;
 						modem_init();
+						restarts++;
 						SEGGER_RTT_printf(0, "SEND ERROR :DISCONECTED\r\n");
 						break;
 					}
@@ -889,7 +902,7 @@ static void serial_scheduled_publish (void * p_event_data, uint16_t event_size)/
 				if(modem_data[0] == 'D')
 					{
 						memset(modem_data, 0, sizeof(modem_data));
-						nrf_delay_ms(500);
+						nrf_delay_ms(5000);
 						modem_pub_state = ZERO;
 						break;
 					}
@@ -943,6 +956,12 @@ static void timer_timeout_handler(void * p_context)
 {
 	timer_flag = 0;
 	app_sched_event_put(NULL, NULL, modem_init);
+	if(modem_pub_state == CURSOR  || modem_pub_state == SEND)	//при отправке
+			{
+				app_timer_stop_all();
+				timer_flag = 0;
+				app_sched_event_put(NULL, NULL, serial_scheduled_publish);
+			}
 }
 
 static void lfclk_config(void)
