@@ -16,7 +16,7 @@ static void send_string(char *string_p)																																			 //о�
 {
 	if(timer_flag == 0)
 		{
-			app_timer_start(timer_id, APP_TIMER_TICKS(1000), NULL);
+			app_timer_start(timer_id, APP_TIMER_TICKS(5000), NULL);
 			timer_flag = 1;
 		}
 	for(uint8_t i = 0; i < strlen(string_p); i++)
@@ -308,7 +308,8 @@ static void modem_init()//Инициализация и подключение �
 		case AT:  									 																																						 //Проверка доступен ли модуль					
 			{																		                                                                   
 				app_uart_flush();														                                                         
-				at_write("");														                                                             
+				at_write("");		
+				timer_flag = 1;
 				app_timer_start(timer_id, APP_TIMER_TICKS(1000), NULL);														                 
 				break;														                                                                   
 			}														                                                                           
@@ -422,7 +423,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 	{					                                                                                                 
 		case AT:	//Проверка доступен ли модуль
 			{														                                                                           
-				if(modem_data[0] == ('O')|| modem_data[0] == ('0')|| modem_data[0] == ('A'))							
+				if(modem_data[0] == ('0'))							
 				{	
 					app_timer_stop_all();
 					timer_flag = 0;
@@ -871,7 +872,11 @@ static void serial_scheduled_publish (void * p_event_data, uint16_t event_size)/
 					}
 					else if(modem_data[0] == '+')
 					{
-						modem_conect_state = CONECT_ERROR;
+						memset(modem_data, 0, sizeof(modem_data));
+						modem_pub_state = ZERO;
+						modem_conect_state = UNCONECTED;
+						modem_int_state = AT;
+						modem_init();
 						SEGGER_RTT_printf(0, "SEND ERROR :DISCONECTED\r\n");
 						break;
 					}
@@ -914,9 +919,10 @@ static void uart_event_handle(app_uart_evt_t * p_event)
 			}
 			if(modem_int_state == AT)	//во время ожидания ответа от модема
 			{
-				app_sched_event_put(NULL, NULL, serial_scheduled_ex);				
+				app_sched_event_put(NULL, NULL, serial_scheduled_ex);
 			}
 			rx_read();
+			break;
 		}
 		case APP_UART_TX_EMPTY:
 		{
