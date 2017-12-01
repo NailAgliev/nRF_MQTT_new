@@ -219,11 +219,8 @@ void mqtt_publish(char *topic_name_p, char *content_p)//отправка соо�
 	const uint8_t pub_flag				= 0x31;	//с ретейном 31 без ретэйна 30						
 	uint16_t topic_name_length 		= strlen(topic_name_p);								
 	uint16_t content_length 			= strlen(content_p);								
-	uint8_t package_length      	= (topic_name_length + content_length +4);	
+	uint8_t package_length      	= (topic_name_length + content_length +2);	
 			
-	const char *start  						= "AT+CIPSEND=";							
-  const char *end	 							= "\r\n";						
-						
 	union{					
 		uint16_t length;					
 		struct{					
@@ -231,17 +228,11 @@ void mqtt_publish(char *topic_name_p, char *content_p)//отправка соо�
 					uint8_t b_msb;					
 		}byte;					
 	}btopicl;			
-	btopicl.length = topic_name_length;	
 						
-	union{					
-		uint16_t length;					
-		struct{					
-					uint8_t b_lsb;					
-					uint8_t b_msb;					
-		}byte;					
-	}bcontentl;						
-	bcontentl.length = content_length;					
-	
+			
+	const char *start  						= "AT+CIPSEND=";							
+  const char *end	 							= "\r\n";						
+							
 	switch (modem_pub_state)					
 		{					
 		case ZERO:																																															 //начало отправки
@@ -255,18 +246,17 @@ void mqtt_publish(char *topic_name_p, char *content_p)//отправка соо�
 				{					
 					app_uart_flush();
 					
+					btopicl.length = topic_name_length;					
+					
 					app_uart_put(pub_flag);	
 										
-					app_uart_put(package_length);					
+					app_uart_put(package_length);	
 										
 					app_uart_put(btopicl.byte.b_msb);					
 					app_uart_put(btopicl.byte.b_lsb);					
 										
 					send_string(topic_name_p);					
-										
-					app_uart_put(bcontentl.byte.b_msb);					
-					app_uart_put(bcontentl.byte.b_lsb);					
-										
+
 					send_string(content_p);		
 
 					modem_pub_state = SEND;

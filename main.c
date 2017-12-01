@@ -99,7 +99,7 @@ int main(void)
 	
 		int32_t volatile temp;
 	
-		int16_t volatile index = 9990;
+		int16_t volatile index = 0;
 	
     nrf_temp_init();
 	
