@@ -66,7 +66,7 @@
 #include "nrf_delay.h"
 #include "nrf_temp.h"
 
-
+APP_TIMER_DEF(modem_timer);
 
 modem_config_t my_modem_config = {    //стуктура для подключения к сети
 	.apn 					 	= "internet.mts.ru",
@@ -103,7 +103,7 @@ int main(void)
 	
     nrf_temp_init();
 	
-		modem_conect(&my_modem_config, &my_mqtt_config);  //инициализация модема и подключение к серверу
+		modem_conect(&my_modem_config, &my_mqtt_config, &modem_timer);  //инициализация модема и подключение к серверу
 
     while (true)
     {

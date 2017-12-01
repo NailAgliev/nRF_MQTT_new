@@ -150,9 +150,9 @@
         <Bp>
           <Number>0</Number>
           <Type>0</Type>
-          <LineNumber>262</LineNumber>
+          <LineNumber>906</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>8850</Address>
+          <Address>13810</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -161,12 +161,12 @@
           <BreakIfRCount>1</BreakIfRCount>
           <Filename>..\..\..\mqtt.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\nrf52832_xxaa\../../../mqtt.c\262</Expression>
+          <Expression>\\nrf52832_xxaa\../../../mqtt.c\906</Expression>
         </Bp>
         <Bp>
           <Number>1</Number>
           <Type>0</Type>
-          <LineNumber>253</LineNumber>
+          <LineNumber>939</LineNumber>
           <EnabledFlag>1</EnabledFlag>
           <Address>0</Address>
           <ByteObject>0</ByteObject>
@@ -190,6 +190,11 @@
           <count>1</count>
           <WinNumber>1</WinNumber>
           <ItemText>package_length</ItemText>
+        </Ww>
+        <Ww>
+          <count>2</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>modem_data</ItemText>
         </Ww>
       </WatchWindow1>
       <Tracepoint>

@@ -8,13 +8,21 @@ static	modem_int_state_t		 modem_int_state;			//состояние инициа�
 static	modem_conect_state_t modem_conect_state;  //состояние подключения
 static	modem_pub_state_t 	 modem_pub_state;			//состояние отправки
 
+static 	uint8_t						 	 timer_flag;
+
+app_timer_id_t timer_id;
 
 static void send_string(char *string_p)																																			 //отправка строки
 {
+	if(timer_flag == 0)
+		{
+			app_timer_start(timer_id, APP_TIMER_TICKS(1000), NULL);
+			timer_flag = 1;
+		}
 	for(uint8_t i = 0; i < strlen(string_p); i++)
-	{
-		app_uart_put((uint8_t)*(string_p + i));
-	}
+		{
+			app_uart_put((uint8_t)*(string_p + i));
+		}
 }
 
 
@@ -75,40 +83,45 @@ static void at_write(char second[])//отправка команд модулю
 {					
 		const char *first  = "AT";					
     const char *third	 = "\r\n";					
-						
-    printf("%s%s%s", first, second, third);					
+					char string[120];
+	
+    sprintf(string, "%s%s%s", first, second, third);					
 						
 		SEGGER_RTT_printf(0, "%s%s%s", first, second, third);					
-							
+		
+		send_string(string);
 }					
 					
 static void at_write_apn(const char apn[],const char user[],const char pass[])//подключение к провайдеру
 {					
 		const char *start  = "AT+CSTT=";					
     const char *end	 = "\r\n";					
-							
+					char string[120];		
 							
 						
-    printf("%s\"%s\",\"%s\",\"%s\"%s", start, apn, user, pass, end);					
+    sprintf(string, "%s\"%s\",\"%s\",\"%s\"%s", start, apn, user, pass, end);					
 						
 		SEGGER_RTT_printf(0, "%s\"%s\",\"%s\",\"%s\"%s", start, apn, user, pass, end);					
-							
+		
+		send_string(string);
 }					
 					
 static void at_write_tcp(const char server_address[],const char server_port[])//подключение к серверу
 {					
 		const char *start  = "AT+CIPSTART=\"TCP\",\"";					
-    const char *end	 = "\r\n";					
+    const char *end	 = "\r\n";
+					char string[120];
 							
 							
 						
-    printf("%s%s\",\"%s\"%s", start, server_address, server_port, end);					
+    sprintf(string, "%s%s\",\"%s\"%s", start, server_address, server_port, end);					
 						
 		SEGGER_RTT_printf(0, "%s%s\",\"%s\"%s", start, server_address, server_port, end);					
-							
+		
+		send_string(string);
 }					
 					
-void mqtt_connect(const char *client_id, const char *server_login, const char *server_pass)//авторизация на сревере 
+void mqtt_connect(char *client_id, char *server_login, char *server_pass)//авторизация на сревере 
 {									                                                                                           
 	const uint8_t con_flag					= 0x10;									                                                   
 	//все члены масивы стандарстные последние два бита отвечают за длительност подключения в секундах сейчас стоит	1 hour									 
@@ -122,9 +135,9 @@ void mqtt_connect(const char *client_id, const char *server_login, const char *s
 	//стандартные служебные байты не меняются всегда 16
 	uint8_t package_length      		= (client_id_length + server_login_length + server_pass_length + 16	); 
 										                                                                                         
-	const char *start  = "AT+CIPSEND=";		//ат команда отправки	через сим на сервер						                                                       
-										                                                                                         
-  const char *end	 = "\r\n";										                                                             
+	const char *start  = "AT+CIPSEND=";		//ат команда отправки	через сим на сервер						                                                       						                                                                                         
+  const char *end	 	 = "\r\n";		
+	char string[120];
 										                                                                                         
 	union{									                                                                                   
 		uint16_t length;									                                                                       
@@ -161,7 +174,8 @@ void mqtt_connect(const char *client_id, const char *server_login, const char *s
 			case UNCONECTED:									                                                                           
 				{									                                                                                   
 					app_uart_flush();									                                                                 
-					printf("%s%d%s", start, package_length+2, end);									                                   
+					sprintf(string, "%s%d%s", start, package_length+2, end);		
+					send_string(string);
 					modem_conect_state = WAIT_CURSOR;									                                                 
 					break;									                                                                           
 				}									                                                                                   
@@ -181,17 +195,17 @@ void mqtt_connect(const char *client_id, const char *server_login, const char *s
 					app_uart_put(bidl.byte.b_msb);									                                                   
 					app_uart_put(bidl.byte.b_lsb);									                                                   
 														                                                                                 
-					printf("%s", client_id);									                                                         
+					send_string(client_id);									                                                         
 														                                                                                 
 					app_uart_put(blogl.byte.b_msb);									                                                   
 					app_uart_put(blogl.byte.b_lsb);									                                                   
 														                                                                                 
-					printf("%s", server_login);									                                                       
+					send_string(server_login);									                                                       
 														                                                                                 
 					app_uart_put(bpassl.byte.b_msb);									                                                 
 					app_uart_put(bpassl.byte.b_lsb);									                                                 
 														                                                                                 
-					printf("%s", server_pass);									                                                       
+					send_string(server_pass);									                                                       
 														                                                                                 
 					break;									                                                                           
 				}									                                                                                   
@@ -232,13 +246,14 @@ void mqtt_publish(char *topic_name_p, char *content_p)//отправка соо�
 			
 	const char *start  						= "AT+CIPSEND=";							
   const char *end	 							= "\r\n";						
-							
+	char string[120];	
 	switch (modem_pub_state)					
 		{					
 		case ZERO:																																															 //начало отправки
 				{					
 					app_uart_flush();					
-					printf("%s%d%s", start, package_length+2, end);				
+					sprintf(string, "%s%d%s", start, package_length+2, end);	
+					send_string(string);
 					modem_pub_state = CURSOR;					
 					break;					
 				}					
@@ -258,6 +273,8 @@ void mqtt_publish(char *topic_name_p, char *content_p)//отправка соо�
 					send_string(topic_name_p);					
 
 					send_string(content_p);		
+						
+					SEGGER_RTT_printf(0, "%s", content_p);
 
 					modem_pub_state = SEND;
 					break;
@@ -292,7 +309,7 @@ static void modem_init()//Инициализация и подключение �
 			{																		                                                                   
 				app_uart_flush();														                                                         
 				at_write("");														                                                             
-				app_timer_start(uart_timer, APP_TIMER_TICKS(1000), NULL);														                 
+				app_timer_start(timer_id, APP_TIMER_TICKS(1000), NULL);														                 
 				break;														                                                                   
 			}														                                                                           
 		case CFUN:														                                                                   
@@ -306,7 +323,13 @@ static void modem_init()//Инициализация и подключение �
 				app_uart_flush();														                                                         
 				at_write("+CFUN=1,1");														                                                   
 				break;														                                                                   
-			}														                                                                           
+			}		
+		case CPIN_CHECK:																																											   //Проверка PIN
+			{														                                                                           
+				app_uart_flush();														                                                         
+				at_write("+CPIN=?");														                                                     
+				break;														                                                                   
+			}				
 		case ATE:																																																 //No echo mode					
 			{														                                                                           
 				app_uart_flush();														                                                         
@@ -324,13 +347,7 @@ static void modem_init()//Инициализация и подключение �
 				app_uart_flush();														                                                         
 				at_write("+CMEE=1");														                                                     
 				break;														                                                                   
-			}														                                                                           
-		case CPIN_CHECK:																																											   //Проверка PIN
-			{														                                                                           
-				app_uart_flush();														                                                         
-				at_write("+CPIN=?");														                                                     
-				break;														                                                                   
-			}															                                                                         
+			}														                                                                           														                                                                         
 		case CSQ_CHECK: 																																												 //Проверка силы сигнала					
 			{														                                                                           
 				app_uart_flush();														                                                         
@@ -405,8 +422,10 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 	{					                                                                                                 
 		case AT:	//Проверка доступен ли модуль
 			{														                                                                           
-				if(modem_data[0] == ('O')|| modem_data[0] == ('0')|| modem_data[0] == ('A'))												 		
-				{														                                                                         
+				if(modem_data[0] == ('O')|| modem_data[0] == ('0')|| modem_data[0] == ('A'))							
+				{	
+					app_timer_stop_all();
+					timer_flag = 0;
 					memset(modem_data, 0, sizeof(modem_data));	//чистим модем дата													                             
 					modem_int_state = CFUN;																			                                       
 					modem_init();														                                                           
@@ -415,14 +434,16 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 				else														                                                                     
 				{														                                                                         
 					memset(modem_data, 0, sizeof(modem_data));														                             
-					app_timer_start(uart_timer, APP_TIMER_TICKS(1000), NULL);														               
+					app_timer_start(timer_id, APP_TIMER_TICKS(1000), NULL);														               
 					break;														                                                                 
 				}														                                                                         
 			}														                                                                           
 		case CFUN:
 			{														                                                                           
 				if(modem_data[0] == ('O')|| modem_data[0] == ('0'))														                       
-				{														                                                                         
+				{	
+					app_timer_stop_all();
+					timer_flag = 0;					
 					memset(modem_data, 0, sizeof(modem_data));														                             
 					modem_int_state = CFUN_1;														                                               
 					modem_init();														                                                           
@@ -438,10 +459,11 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 			{														                                                                           
 				if(modem_data[0] == ('O')|| modem_data[0] == ('+')|| modem_data[0] == ('0'))												 		
 				{														                                                                         
-																													                                                   
+					app_timer_stop_all();
+					timer_flag = 0;					
 					modem_int_state = CPIN_CHECK;																	                                     
 					memset(modem_data, 0, sizeof(modem_data));														                             
-					app_timer_start(uart_timer, APP_TIMER_TICKS(11000), NULL);														             
+					app_timer_start(timer_id, APP_TIMER_TICKS(11000), NULL);														             
 					break;														                                                                 
 				}														                                                                         
 				else														                                                                     
@@ -453,7 +475,9 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 		case CPIN_CHECK:		//Проверка пин кода
 			{														                                                                           
 				if(modem_data[0] == '0')														                                                 
-				{														                                                                         
+				{		
+					app_timer_stop_all();
+					timer_flag = 0;					
 					memset(modem_data, 0, sizeof(modem_data));														                             
 					modem_int_state = ATE;														                                                 
 					modem_init();														                                                           
@@ -469,7 +493,9 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 		case ATE:		//No echo mode
 			{														                                                                           
 				if(modem_data[0] == ('O')|| modem_data[0] == ('0') || modem_data[0] == ('A')									)			 		
-				{														                                                                         
+				{		
+					app_timer_stop_all();
+					timer_flag = 0;					
 					memset(modem_data, 0, sizeof(modem_data));														                             
 					modem_int_state = ATV;														                                                 
 					modem_init();														                                                           
@@ -484,7 +510,9 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 		case ATV:	//Числовой формат ответов
 			{														                                                                           
 				if(modem_data[0] == ('0'))														                                               
-				{														                                                                         
+				{	
+					app_timer_stop_all();
+					timer_flag = 0;					
 					memset(modem_data, 0, sizeof(modem_data));														                             
 					modem_int_state = CMEE;														                                                 
 					modem_init();														                                                           
@@ -499,7 +527,9 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 		case CMEE:  //Кодовый формат ошибок
 			{														                                                                           
 				if(modem_data[0] == '0')														                                                 
-				{														                                                                         
+				{	
+					app_timer_stop_all();
+					timer_flag = 0;					
 					memset(modem_data, 0, sizeof(modem_data));														                             
 					modem_int_state = CSQ_CHECK;														                                           
 					modem_init();														                                                           
@@ -517,7 +547,9 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 				{														                                                                         
 					bool s = modem_s_q_check();														                                             
 					if(s == true)														                                                           
-					{														                                                                       
+					{	
+					app_timer_stop_all();
+					timer_flag = 0;						
 					memset(modem_data, 0, sizeof(modem_data));														                             
 					modem_int_state = CREG_CHECK;														                                           
 					modem_init();														                                                           
@@ -525,7 +557,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 					}														                                                                       
 					else														                                                                   
 					{														                                                                       
-						printf("Low signal ERROR");														                                           
+						SEGGER_RTT_printf(0, "Low signal ERROR");														                                           
 						modem_int_state = ERROR;														                                             
 						break;														                                                               
 					}														                                                                       
@@ -542,7 +574,9 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 				{														                                                                         
 					bool s = modem_reg_chck();														                                             
 					if(s == true)														                                                           
-					{														                                                                       
+					{	
+					app_timer_stop_all();
+					timer_flag = 0;						
 					memset(modem_data, 0, sizeof(modem_data));														                             
 					modem_int_state = CIPSHUT;														                                             
 					modem_init();														                                                           
@@ -550,7 +584,7 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 					}														                                                                       
 					else														                                                                   
 					{														                                                                       
-						app_timer_start(uart_timer, APP_TIMER_TICKS(1000), NULL);														             
+						app_timer_start(timer_id, APP_TIMER_TICKS(1000), NULL);														             
 						break;														                                                               
 					}														                                                                       
 				}														                                                                         
@@ -563,7 +597,9 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 		case CIPSHUT:		//TCP restart
 			{														                                                                           
 				if(modem_data[0] == 'S')														                                                 
-				{														                                                                         
+				{		
+					app_timer_stop_all();
+					timer_flag = 0;					
 					memset(modem_data, 0, sizeof(modem_data));														                             
 					modem_int_state = CGATT_CHECK;														                                         
 					modem_init();														                                                           
@@ -582,14 +618,16 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 					bool s;														                                                                 
 					s = cgatt_check();														                                                     
 					if(s == true)														                                                           
-					{														                                                                       
+					{		
+						app_timer_stop_all();
+						timer_flag = 0;						
 						memset(modem_data, 0, sizeof(modem_data));														                           
 						modem_int_state = CGATT_CHECK_OK;														                                     
 						break;														                                                               
 					}														                                                                       
 					else														                                                                   
 						memset(modem_data, 0, sizeof(modem_data));														                           
-						app_timer_start(uart_timer, APP_TIMER_TICKS(1000), NULL);														             
+						app_timer_start(timer_id, APP_TIMER_TICKS(1000), NULL);														             
 						break;														                                                               
 				}														                                                                         
 				else														                                                                     
@@ -602,7 +640,9 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 		case CGATT_CHECK_OK:														                                                         
 			{														                                                                           
 				if(modem_data[0] == ('0'))														                                               
-				{														                                                                         
+				{			
+					app_timer_stop_all();
+					timer_flag = 0;					
 					memset(modem_data, 0, sizeof(modem_data));														                             
 					modem_int_state = CIPRXGET;														                                             
 					modem_init();														                                                           
@@ -617,7 +657,9 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 		case CIPRXGET:		//Ручное получение полученных сообщений
 			{														                                                                           
 				if(modem_data[0] == ('0'))														                                               
-				{														                                                                         
+				{				
+					app_timer_stop_all();
+					timer_flag = 0;					
 					memset(modem_data, 0, sizeof(modem_data));														                             
 					modem_int_state = CIPQSEND;														                                             
 					modem_init();														                                                           
@@ -632,7 +674,9 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 		case CIPQSEND:	//Режим отправки без потверждения получения		
 			{																	                                                                     
 				if(modem_data[0] == ('0'))																	                                         
-				{																	                                                                   
+				{		
+					app_timer_stop_all();
+					timer_flag = 0;					
 					memset(modem_data, 0, sizeof(modem_data));																	                       
 					modem_int_state = CSTT;																	                                           
 					modem_init();																	                                                     
@@ -647,7 +691,9 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 		case CSTT:		//Конфигурация APN
 			{														                                                                           
 				if(modem_data[0] == ('0'))														                                               
-				{														                                                                         
+				{			
+					app_timer_stop_all();
+					timer_flag = 0;					
 					memset(modem_data, 0, sizeof(modem_data));														                             
 					modem_int_state = CIICR;														                                               
 					modem_init();														                                                           
@@ -662,7 +708,9 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 		case CIICR:		//Влючение GPRS
 			{														                                                                           
 					if(modem_data[0] == ('0'))														                                             
-				{														                                                                         
+				{					
+					app_timer_stop_all();
+					timer_flag = 0;					
 					memset(modem_data, 0, sizeof(modem_data));														                             
 					modem_int_state = CIFSR;														                                               
 					modem_init();														                                                           
@@ -677,7 +725,9 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 		case CIFSR:	//Получение IP адреса (мы его никуда не принимаем и не записываемся нужен для подключения)
 			{														                                                                           
 					if(strlen(modem_data) > 6)														                                             
-				{														                                                                         
+				{				
+					app_timer_stop_all();
+					timer_flag = 0;					
 					memset(modem_data, 0, sizeof(modem_data));														                             
 					modem_int_state = CIPSTART;														                                             
 					modem_init();														                                                           
@@ -692,7 +742,9 @@ static void serial_scheduled_ex (void * p_event_data, uint16_t event_size)//ра
 		case CIPSTART:	//Подключение к серверу
 			{					                                                                                             
 					if(modem_data[0] == ('C'))					                                                               
-				{					                                                                                           
+				{			
+					app_timer_stop_all();
+					timer_flag = 0;					
 					memset(modem_data, 0, sizeof(modem_data));					                                               
 					modem_int_state = OK;					                                                                     
 					modem_init();					                                                                             
@@ -738,6 +790,7 @@ static void rx_red_confirm()//проверка успешности автори
 		if(modem_data[23] == 0x00)
 			{
 				modem_conect_state = CONECTED;
+				memset(modem_data, 0, sizeof(modem_data));
 				modem_publish();
 			}
 			else if(modem_data[23] == 0x01 || modem_data[23] == 0x02 || modem_data[23] == 0x03 || modem_data[23] == 0x04 || modem_data[23] == 0x05)  //когда будет время добавить ошибки подключения
@@ -761,7 +814,13 @@ static void serial_scheduled_conect (void * p_event_data, uint16_t event_size)//
 							modem_conect_state = DATA_SEND;
 							mqtt_connect(mqtt_config.client_id, mqtt_config.server_login, mqtt_config.server_pass);
 						}
-						break;
+						else if(modem_data[0] == '+')
+						{
+							modem_conect_state = CONECT_ERROR;
+							SEGGER_RTT_printf(0, "SEND ERROR :DISCONECTED\r\n");
+							break;
+						}
+					break;
 				}
 			case DATA_SEND://ждем DATA ACCEPT
 				{
@@ -808,8 +867,16 @@ static void serial_scheduled_publish (void * p_event_data, uint16_t event_size)/
 						memset(modem_data, 0, sizeof(modem_data));
 						modem_pub_state = DATA;
 						mqtt_publish(mqtt_config.topic_name, mqtt_config.content);
+						break;
+					}
+					else if(modem_data[0] == '+')
+					{
+						modem_conect_state = CONECT_ERROR;
+						SEGGER_RTT_printf(0, "SEND ERROR :DISCONECTED\r\n");
+						break;
 					}
 					break;
+
 			}
 		case SEND:	//ждем подтверждения отправки
 			{
@@ -817,7 +884,7 @@ static void serial_scheduled_publish (void * p_event_data, uint16_t event_size)/
 				if(modem_data[0] == 'D')
 					{
 						memset(modem_data, 0, sizeof(modem_data));
-						nrf_delay_ms(3000);
+						nrf_delay_ms(500);
 						modem_pub_state = ZERO;
 						break;
 					}
@@ -833,17 +900,20 @@ static void uart_event_handle(app_uart_evt_t * p_event)
 		{
 			if(modem_pub_state == CURSOR  || modem_pub_state == SEND)	//при отправке
 			{
+				app_timer_stop_all();
+				timer_flag = 0;
 				app_sched_event_put(NULL, NULL, serial_scheduled_publish);
 				break;
 			}
 			if(modem_conect_state != UNCONECTED  && modem_conect_state != CONECTED)	//при подключении
 			{
+				app_timer_stop_all();
+				timer_flag = 0;
 				app_sched_event_put(NULL, NULL, serial_scheduled_conect);
 				break;
 			}
 			if(modem_int_state == AT)	//во время ожидания ответа от модема
 			{
-				app_timer_stop_all();
 				app_sched_event_put(NULL, NULL, serial_scheduled_ex);				
 			}
 			rx_read();
@@ -865,6 +935,7 @@ static void uart_event_handle(app_uart_evt_t * p_event)
 
 static void timer_timeout_handler(void * p_context)
 {
+	timer_flag = 0;
 	app_sched_event_put(NULL, NULL, modem_init);
 }
 
@@ -879,8 +950,11 @@ static void lfclk_config(void)
 }
 
 
-void modem_conect(modem_config_t * p_modem_config, mqtt_config_t *	p_mqtt_config)
+void modem_conect(modem_config_t * p_modem_config, mqtt_config_t *	p_mqtt_config, const app_timer_id_t * p_timer_id)
 {
+		
+		timer_id = *p_timer_id;
+	
 		uint32_t err_code;
 	
 		modem_config.apn 					 = p_modem_config->apn;
@@ -903,7 +977,7 @@ void modem_conect(modem_config_t * p_modem_config, mqtt_config_t *	p_mqtt_config
 		err_code = app_timer_init();
     APP_ERROR_CHECK(err_code);
 		
-		err_code = app_timer_create(&uart_timer, APP_TIMER_MODE_SINGLE_SHOT, timer_timeout_handler);
+		err_code = app_timer_create(&timer_id, APP_TIMER_MODE_SINGLE_SHOT, timer_timeout_handler);
     APP_ERROR_CHECK(err_code);
 	
 		const app_uart_comm_params_t comm_params =
